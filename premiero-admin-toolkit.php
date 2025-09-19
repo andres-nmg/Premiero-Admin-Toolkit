@@ -2,16 +2,15 @@
 /**
  * Plugin Name: Premiero Admin Toolkit
  * Description: Personalización y soporte personalizado.
- * Version:     1.6.4
+ * Version:     1.7.1
  * Author:      Premiero
  * Author URI:  https://premiero.es
  * Text Domain: premiero-admin
  */
 
-
 if ( ! defined('ABSPATH') ) exit;
 
-define('PREMIERO_ATK_VER', '0.6.3');
+define('PREMIERO_ATK_VER', '1.6.4');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_URL', plugin_dir_url(__FILE__));
@@ -90,7 +89,7 @@ add_action('admin_menu', function() {
         'dashicons-admin-tools', // sin PNG para evitar logos en admin
         81
     );
-    // Solo Ajustes como submenú (Soporte solo como pestaña)
+    // Solo Ajustes como submenú (Soporte solo como pestaña integrada en Info)
     add_submenu_page(PREMIERO_ATK_SLUG,'Ajustes','Ajustes','manage_options',PREMIERO_ATK_SLUG,'premiero_render_settings_page');
 }, 20);
 
@@ -204,7 +203,7 @@ add_action('admin_menu', function() {
         }
     }
 
-    // 1) Separador visual bajo "Ajustes"
+    // 1) Separador visual bajo "Ajustes" (espacio sin línea ni texto)
     add_submenu_page(
         PREMIERO_ATK_SLUG,
         '',
@@ -239,7 +238,7 @@ add_action('admin_menu', function() {
 
 }, 999);
 
-/* CSS del separador (sin depender de un handle) */
+/* CSS del separador (sin texto ni línea: solo espacio) */
 add_action('admin_head', function(){
     echo '<style>
     #adminmenu .wp-submenu a[href="admin.php?page=premiero-separator"]{
@@ -267,13 +266,13 @@ function premiero_admin_header($active_tab = 'settings') {
 
 function premiero_tabs_nav($active) {
     $tabs = [
+        'info'    => 'Info',
         'php'     => 'Snippets PHP',
         'head'    => 'HTML &lt;head&gt;',
         'body'    => 'HTML &lt;body&gt;',
         'css'     => 'CSS',
         'menuwp'  => 'Menú WP',
         'adminui' => 'Login / Admin UI',
-        'support' => 'Soporte',
     ];
     echo '<h2 class="nav-tab-wrapper">';
     foreach ($tabs as $slug => $label) {
@@ -302,7 +301,8 @@ add_action('admin_enqueue_scripts', function($hook){
 function premiero_render_settings_page() {
     if ( ! current_user_can('manage_options') ) return;
 
-    $active = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'css';
+    // Por defecto, abrir en la nueva pestaña "info"
+    $active = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'info';
 
     /* Guardado de snippets MU */
     if ( 'php' === $active && isset($_POST['premiero_snippets_submit']) && check_admin_referer('premiero_snippets_nonce') ) {
@@ -351,6 +351,17 @@ function premiero_render_settings_page() {
     echo '<div class="premiero-card">';
 
     switch ($active) {
+        case 'info': ?>
+            <div class="notice notice-info">
+                <p><strong>Desarrollado por <a href="https://premiero.es" target="_blank" rel="noopener">Premiero</a></strong>. Este plugin está orientado a desarrolladores y tareas de administración de WordPress. <strong>No se recomienda realizar cambios si no se tiene claro lo que se está haciendo.</strong></p>
+            </div>
+
+            <h2>Soporte</h2>
+            <div class="premiero-card">
+                <?php premiero_render_support_inner(); ?>
+            </div>
+        <?php break;
+
         case 'css': ?>
             <form method="post" action="options.php">
                 <?php settings_fields('premiero_settings_group'); ?>
@@ -521,16 +532,12 @@ function premiero_render_settings_page() {
             })(jQuery);
             </script>
         <?php break;
-
-        case 'support':
-            premiero_render_support_inner();
-        break;
     }
 
     echo '</div>';
 }
 
-/* ====================== Soporte (solo pestaña) ====================== */
+/* ====================== Soporte (reutilizado dentro de Info) ====================== */
 function premiero_render_support_inner() { ?>
     <p>Plugin desarrollado por <strong>Premiero</strong> para acelerar tareas de administración.</p>
     <p>Visítanos: <a href="https://premiero.es" target="_blank" rel="noopener">https://premiero.es</a></p>
@@ -566,5 +573,3 @@ add_action('login_footer', function() {
         if(sw && sw.parentNode){ sw.parentNode.insertBefore(credit, sw.nextSibling); }
     })();</script>
 <?php });
-
-
