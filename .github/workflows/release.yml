@@ -1,0 +1,62 @@
+name: Build WordPress plugin release
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and attach plugin ZIP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Build WordPress package
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          RELEASE_VERSION="${RELEASE_TAG#v}"
+          PLUGIN_VERSION="$(sed -nE 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*([^[:space:]]+).*/\1/p' premiero-admin-toolkit.php | head -n 1)"
+          PACKAGE_ROOT="${RUNNER_TEMP}/premiero-package"
+          PLUGIN_DIR="${PACKAGE_ROOT}/premiero-admin-toolkit"
+
+          if [[ ! "${RELEASE_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "La etiqueta debe usar el formato vX.Y.Z o X.Y.Z."
+            exit 1
+          fi
+
+          if [[ "${PLUGIN_VERSION}" != "${RELEASE_VERSION}" ]]; then
+            echo "La etiqueta ${RELEASE_TAG} no coincide con Version: ${PLUGIN_VERSION}."
+            exit 1
+          fi
+
+          if [[ ! -f LICENSE ]]; then
+            echo "Falta el archivo LICENSE en la raíz del repositorio."
+            exit 1
+          fi
+
+          mkdir -p "${PLUGIN_DIR}"
+          rsync -a ./ "${PLUGIN_DIR}/" \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude ".gitignore" \
+            --exclude ".gitattributes" \
+            --exclude ".DS_Store"
+
+          cd "${PACKAGE_ROOT}"
+          zip -rq "${GITHUB_WORKSPACE}/premiero-admin-toolkit.zip" "premiero-admin-toolkit"
+
+      - name: Attach ZIP to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "${RELEASE_TAG}" "premiero-admin-toolkit.zip" --clobber
