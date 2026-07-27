@@ -28,15 +28,6 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 
 Las versiones posteriores aparecerán en el sistema de actualizaciones de WordPress.
 
-### Migración desde TecnoDerecho
-
-Si un sitio tiene instalado TecnoDerecho Admin Toolkit:
-
-1. Instala `premiero-admin-toolkit.zip` como un plugin nuevo.
-2. Pulsa **Activar** en Premiero Admin Toolkit.
-3. Premiero desactivará TecnoDerecho y migrará automáticamente las opciones compartidas, la identidad, el logo y el MU-plugin de snippets.
-4. Espera al aviso de migración correcta antes de eliminar el plugin TecnoDerecho antiguo.
-
 ## Publicación de versiones
 
 1. Actualiza `Version` y `PREMIERO_ATK_VER` en `premiero-admin-toolkit.php`.
