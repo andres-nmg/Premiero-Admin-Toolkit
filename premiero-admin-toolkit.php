@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.2.2
+ * Version:     3.3.0
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.2.2');
+define('PREMIERO_ATK_VER', '3.3.0');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_URL', plugin_dir_url(__FILE__));
@@ -68,6 +68,11 @@ const PREMIERO_OPT_LOGIN_LOGO_W   = 'premiero_login_logo_w';    // ancho px (int
 const PREMIERO_OPT_WHITE_LABEL_ENABLED = 'premiero_white_label_enabled';
 const PREMIERO_OPT_WHITE_LABEL_NAME    = 'premiero_white_label_name';
 const PREMIERO_OPT_WHITE_LABEL_LOGO_ID = 'premiero_white_label_logo_id';
+
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-console-client.php';
+Premiero_Console_Client::init();
+register_activation_hook( __FILE__, [ 'Premiero_Console_Client', 'activate' ] );
+register_deactivation_hook( __FILE__, [ 'Premiero_Console_Client', 'deactivate' ] );
 
 function premiero_is_white_label() {
     return (bool) get_option( PREMIERO_OPT_WHITE_LABEL_ENABLED, false )
@@ -1362,6 +1367,7 @@ function premiero_admin_header($active_tab = 'info') {
         'repository' => ['Repositorio', 'Instala plugins y temas locales o desde WordPress.org.'],
         'adminui'    => ['Login', 'Personaliza la pantalla de acceso y su crédito.'],
         'branding'   => ['Identidad', 'Adapta el nombre y el logo del plugin para un cliente.'],
+        'monitoring' => ['Monitorización', 'Conecta esta instalación con la consola privada de mantenimiento.'],
     ];
     $section = $sections[$active_tab] ?? $sections['info'];
     ?>
@@ -1391,6 +1397,7 @@ function premiero_tabs_nav($active) {
         'repository' => 'Repositorio',
         'adminui'    => 'Login',
         'branding'   => 'Identidad',
+        'monitoring' => 'Monitorización',
     ];
     echo '<h2 class="nav-tab-wrapper">';
     foreach ($tabs as $slug => $label) {
@@ -1602,6 +1609,9 @@ function premiero_render_settings_page() {
                 </a>
                 <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=branding')); ?>">
                     <strong>Identidad</strong><span>Nombre y logo para clientes.</span>
+                </a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=monitoring')); ?>">
+                    <strong>Monitorización</strong><span>Conexión de solo lectura con la consola.</span>
                 </a>
             </div>
             <h2>Soporte</h2>
@@ -1972,6 +1982,10 @@ function premiero_render_settings_page() {
 
         case 'repository':
             premiero_render_repository();
+        break;
+
+        case 'monitoring':
+            Premiero_Console_Client::render_tab();
         break;
 
         /* ====================== PESTAÑA ADMIN UI ====================== */
