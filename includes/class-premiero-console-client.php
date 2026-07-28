@@ -390,6 +390,8 @@ final class Premiero_Console_Client {
 								<p class="description">
 									Puedes introducir la portada de la consola o su base REST
 									<code>/wp-json/<?php echo esc_html( self::API_NAMESPACE ); ?></code>.
+									HTTPS es obligatorio en producción; HTTP solo se admite entre
+									instalaciones locales.
 								</p>
 							</td>
 						</tr>
@@ -488,7 +490,7 @@ final class Premiero_Console_Client {
 			return $error;
 		}
 
-		$response = wp_safe_remote_post(
+		$response = self::post_to_console(
 			$api_base . '/pair',
 			array(
 				'timeout'             => 10,
@@ -677,7 +679,7 @@ final class Premiero_Console_Client {
 				'X-Premiero-Signature'  => $signature,
 			);
 
-			$response = wp_safe_remote_post(
+			$response = self::post_to_console(
 				$api_base . '/telemetry',
 				array(
 					'timeout'             => 8,
@@ -806,10 +808,11 @@ final class Premiero_Console_Client {
 				'size_bytes'  => isset( $storage['total_bytes'] ) ? self::normalize_size_value( $storage['total_bytes'] ) : null,
 			),
 			'identity'       => array(
-				'mode'     => 'white_label' === $branding['mode'] ? 'white_label' : 'premiero',
-				'name'     => sanitize_text_field( get_bloginfo( 'name' ) ),
-				'logo_url' => $branding['client_logo_url'],
-				'color'    => $branding['background_color'],
+				'mode'        => 'white_label' === $branding['mode'] ? 'white_label' : 'premiero',
+				'name'        => sanitize_text_field( get_bloginfo( 'name' ) ),
+				'logo_url'    => $branding['client_logo_url'],
+				'favicon_url' => $branding['client_favicon_url'],
+				'color'       => $branding['background_color'],
 			),
 			'updates'       => array(
 				'status'          => $updates_status,
@@ -982,6 +985,9 @@ final class Premiero_Console_Client {
 		if ( ! $client_logo_url ) {
 			$client_logo_url = self::attachment_url( (int) get_theme_mod( 'custom_logo', 0 ) );
 		}
+		$client_favicon_url = function_exists( 'get_site_icon_url' )
+			? get_site_icon_url( 64 )
+			: '';
 
 		$background = sanitize_hex_color( trim( (string) get_option( 'premiero_login_bg', '' ) ) );
 
@@ -990,6 +996,7 @@ final class Premiero_Console_Client {
 			'maintenance_brand_name' => sanitize_text_field( (string) $brand_name ),
 			'maintenance_logo_url'   => esc_url_raw( (string) $maintenance_logo ),
 			'client_logo_url'        => esc_url_raw( (string) $client_logo_url ),
+			'client_favicon_url'     => esc_url_raw( (string) $client_favicon_url ),
 			'background_color'       => $background ? $background : '',
 		);
 	}
@@ -1486,10 +1493,16 @@ final class Premiero_Console_Client {
 			return new WP_Error( 'console_url_components', 'La URL de la consola no puede incluir credenciales, consulta ni fragmento.' );
 		}
 
-		$scheme         = strtolower( $parts['scheme'] );
-		$allow_insecure = (bool) apply_filters( 'premiero_console_allow_insecure_endpoint', false, $url );
-		if ( 'https' !== $scheme && ! ( 'http' === $scheme && $allow_insecure ) ) {
-			return new WP_Error( 'console_https_required', 'La consola debe utilizar HTTPS.' );
+		$scheme     = strtolower( $parts['scheme'] );
+		$allow_http = 'http' === $scheme
+			&& self::is_local_development_endpoint( $url )
+			&& (bool) apply_filters( 'premiero_console_allow_insecure_endpoint', true, $url );
+
+		if ( 'https' !== $scheme && ! $allow_http ) {
+			return new WP_Error(
+				'console_https_required',
+				'La consola debe utilizar HTTPS. HTTP solo está permitido con destinos locales en entornos local o development.'
+			);
 		}
 
 		$url = untrailingslashit( $url );
@@ -1504,6 +1517,76 @@ final class Premiero_Console_Client {
 		}
 
 		return esc_url_raw( $url );
+	}
+
+	/**
+	 * Envía una petición manteniendo la protección SSRF de WordPress.
+	 *
+	 * wp_safe_remote_post() rechaza correctamente redes privadas. La única
+	 * excepción es un destino HTTP ya validado como local cuando el propio
+	 * WordPress está declarado como local/development. En ese caso se impiden
+	 * redirecciones para no reenviar el token o la firma a otro host.
+	 *
+	 * @param string $url  Endpoint completo.
+	 * @param array  $args Argumentos HTTP.
+	 * @return array|WP_Error
+	 */
+	private static function post_to_console( $url, $args ) {
+		$scheme = strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) );
+
+		if ( 'http' === $scheme && self::is_local_development_endpoint( $url ) ) {
+			$args['redirection'] = 0;
+			return wp_remote_post( $url, $args );
+		}
+
+		return wp_safe_remote_post( $url, $args );
+	}
+
+	/**
+	 * Comprueba que una URL apunta realmente a un destino de desarrollo local.
+	 *
+	 * No basta con marcar WordPress como local: el host también debe ser
+	 * localhost, usar un sufijo reservado para desarrollo o ser una IP no
+	 * pública. El resultado nunca puede ser verdadero en producción/staging.
+	 *
+	 * @param string $url URL que se va a consultar.
+	 * @return bool
+	 */
+	private static function is_local_development_endpoint( $url ) {
+		$environment = function_exists( 'wp_get_environment_type' )
+			? wp_get_environment_type()
+			: 'production';
+
+		if ( ! in_array( $environment, array( 'local', 'development' ), true ) ) {
+			return false;
+		}
+
+		$host = wp_parse_url( (string) $url, PHP_URL_HOST );
+		if ( ! is_string( $host ) || '' === $host ) {
+			return false;
+		}
+
+		$host = strtolower( rtrim( trim( $host, '[]' ), '.' ) );
+
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			return false === filter_var(
+				$host,
+				FILTER_VALIDATE_IP,
+				FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+			);
+		}
+
+		if ( 'localhost' === $host ) {
+			return true;
+		}
+
+		foreach ( array( '.localhost', '.local', '.test' ) as $suffix ) {
+			if ( strlen( $host ) > strlen( $suffix ) && $suffix === substr( $host, -strlen( $suffix ) ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
