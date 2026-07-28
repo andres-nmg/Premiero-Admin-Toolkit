@@ -85,3 +85,8 @@ archivos durante el tráfico normal.
 El botón **Desconectar** elimina únicamente la clave guardada en esa instalación.
 Si también se quiere invalidar la clave que conserva la consola, debe usarse
 **Revocar conexión** en la ficha correspondiente de la consola.
+
+En producción la URL de la consola debe utilizar HTTPS. Para facilitar las
+pruebas, HTTP se admite únicamente cuando WordPress está configurado como
+`local` o `development` y la consola utiliza `localhost`, un dominio `.local`
+o `.test`, o una dirección IP privada.
