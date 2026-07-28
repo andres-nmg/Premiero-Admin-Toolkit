@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.2.2
+Stable tag: 3.3.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -14,6 +14,8 @@ Herramientas de administración, personalización e instalación para WordPress.
 Premiero Admin Toolkit reúne en una única interfaz herramientas para gestionar código personalizado, organizar el menú de administración, instalar plugins y temas y personalizar la pantalla de acceso.
 
 La pestaña Identidad permite adaptar el nombre y el logo del plugin para cada cliente sin crear versiones separadas. La configuración permanece guardada al actualizar.
+
+La pestaña Monitorización permite emparejar una instalación con Premiero Maintenance Console. La comunicación siempre parte desde WordPress, está firmada y solo envía un resumen técnico; no admite acciones remotas ni transmite credenciales.
 
 Las actualizaciones estables se distribuyen mediante GitHub Releases desde:
 
@@ -39,6 +41,13 @@ Sí. El proyecto se distribuye bajo GPLv3 o posterior. Conserva los avisos de li
 WordPress consulta la última Release estable del repositorio público de GitHub. Cuando existe una versión superior, aparece como una actualización normal del plugin.
 
 == Changelog ==
+
+= 3.3.0 =
+
+* Añadida conexión de solo lectura con Premiero Maintenance Console.
+* Incorporados emparejamiento de un solo uso, firma HMAC, sincronización cada doce horas y reintentos con backoff.
+* Añadidos estados resumidos de WordPress, PHP, actualizaciones, UpdraftPlus y Wordfence.
+* Añadido cálculo semanal y cacheado del tamaño de la instalación.
 
 = 3.2.2 =
 
