@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.3.1
+ * Version:     3.3.3
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.3.1');
+define('PREMIERO_ATK_VER', '3.3.3');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_URL', plugin_dir_url(__FILE__));
@@ -1361,7 +1361,7 @@ function premiero_admin_header($active_tab = 'info') {
     $brand_name = premiero_get_brand_name();
     $logo       = premiero_get_brand_logo_url('medium');
     $sections = [
-        'info'       => ['Ajustes', 'Información general y acceso rápido a las herramientas.'],
+        'info'       => ['Acerca de', 'Autoría, licencia, actualizaciones, soporte y acceso rápido.'],
         'code'       => ['Código', 'Gestiona PHP, HTML y CSS personalizado desde un único lugar.'],
         'menuwp'     => ['Menú', 'Agrupa y renombra elementos del menú de administración.'],
         'repository' => ['Repositorio', 'Instala plugins y temas locales o desde WordPress.org.'],
@@ -1391,7 +1391,7 @@ function premiero_admin_header($active_tab = 'info') {
 
 function premiero_tabs_nav($active) {
     $tabs = [
-        'info'       => 'Info',
+        'info'       => 'Acerca de',
         'code'       => 'Código',
         'menuwp'     => 'Menú',
         'repository' => 'Repositorio',
@@ -1441,6 +1441,31 @@ add_action('admin_enqueue_scripts', function($hook){
     .premiero-overview a:hover{border-color:#2271b1;box-shadow:0 1px 3px rgba(0,0,0,.08)}
     .premiero-overview strong{display:block;margin-bottom:5px;color:#1d2327}
     .premiero-overview span{color:#646970}
+    .premiero-info-layout{display:grid;grid-template-columns:minmax(340px,1.05fr) minmax(420px,.95fr);gap:28px;align-items:start}
+    .premiero-info-brand,.premiero-info-panel{box-sizing:border-box;border:1px solid #dcdcde;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+    .premiero-info-brand{padding:36px;border-top:5px solid #6b1c00}
+    .premiero-info-wordmark{display:inline-block;text-decoration:none}
+    .premiero-info-wordmark img{display:block;width:min(100%,170px);height:auto;max-height:100px;object-fit:contain;object-position:left center}
+    .premiero-info-wordmark span{display:block;color:#6b1c00;font-size:36px;font-weight:800;line-height:1}
+    .premiero-info-wordmark:hover img,.premiero-info-wordmark:focus img{opacity:.82}
+    .premiero-info-eyebrow{margin:5px 0 30px;color:#64748b;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+    .premiero-info-brand h2{margin:0 0 14px;font-size:26px}
+    .premiero-info-lead{max-width:680px;font-size:16px;line-height:1.65}
+    .premiero-info-warning{margin-top:24px;padding:14px 16px;border-left:4px solid #6b1c00;background:#fff7f4;color:#3b241d}
+    .premiero-info-warning p{margin:0;line-height:1.55}
+    .premiero-info-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+    .premiero-info-layout a:not(.button){color:#6b1c00}
+    .premiero-info-layout .button-primary{border-color:#6b1c00;background:#6b1c00}
+    .premiero-info-layout .button-primary:hover,.premiero-info-layout .button-primary:focus{border-color:#4a1300;background:#4a1300}
+    .premiero-info-details{display:grid;gap:16px}
+    .premiero-info-primary{display:grid;gap:16px}
+    .premiero-info-panel{padding:22px 24px}
+    .premiero-info-panel h2,.premiero-info-panel h3{margin-top:0}
+    .premiero-info-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .premiero-info-tools a{display:block;padding:14px;border:1px solid #dcdcde;border-radius:6px;background:#fff;text-decoration:none}
+    .premiero-info-tools a:hover,.premiero-info-tools a:focus{border-color:#6b1c00;box-shadow:0 1px 4px rgba(107,28,0,.14)}
+    .premiero-info-tools strong{display:block;margin-bottom:4px;color:#1d2327}
+    .premiero-info-tools span{display:block;color:#646970;line-height:1.4}
     .premiero-menu-table{border-collapse:collapse;width:100%;table-layout:auto}
     .premiero-menu-table th,.premiero-menu-table td{padding:8px 10px;border-bottom:1px solid #eee;vertical-align:middle}
     .premiero-menu-table th{background:#fafafa;text-align:left}
@@ -1479,6 +1504,9 @@ add_action('admin_enqueue_scripts', function($hook){
     .premiero-branding-logo-preview img{display:block;max-width:240px;max-height:90px;width:auto;height:auto;margin:0 0 12px}
     .premiero-branding-status{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#f0f0f1;font-weight:600}
     .premiero-branding-status.is-active{background:#edfaef;color:#116329}
+    @media (max-width:1100px){
+        .premiero-info-layout{grid-template-columns:1fr}
+    }
     @media (max-width:782px){
         .premiero-head{align-items:flex-start!important;gap:16px;padding-right:12px!important}
         .premiero-head img{height:30px!important}
@@ -1486,6 +1514,9 @@ add_action('admin_enqueue_scripts', function($hook){
         .nav-tab-wrapper .nav-tab{padding:7px 10px;font-size:13px}
         .premiero-card{padding:16px;margin-right:10px}
         .premiero-overview{grid-template-columns:1fr}
+        .premiero-info-layout{grid-template-columns:1fr}
+        .premiero-info-brand{padding:26px}
+        .premiero-info-tools{grid-template-columns:1fr}
         .premiero-menu-toolbar{align-items:stretch}
         .premiero-menu-toolbar .search-box{width:100%}
         .premiero-menu-toolbar input[type=search]{box-sizing:border-box;width:100%;min-width:0}
@@ -1581,42 +1612,92 @@ function premiero_render_settings_page() {
 
     switch ($active) {
 
-        case 'info': ?>
-            <div class="notice notice-info">
-                <p>
-                    <strong>
-                        Desarrollado por <a href="https://premiero.es" target="_blank" rel="noopener">Premiero</a><?php
-                        if ( premiero_is_white_label() ) {
-                            echo ' para ' . esc_html( premiero_get_brand_name() );
-                        }
-                        ?>
-                    </strong>.
-                    Este plugin está orientado a desarrolladores y tareas de administración de WordPress. <strong>No se recomienda realizar cambios si no se tiene claro lo que se está haciendo.</strong>
-                </p>
-            </div>
-            <div class="premiero-overview">
-                <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=code')); ?>">
-                    <strong>Código</strong><span>PHP, HTML y CSS personalizado.</span>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=menuwp')); ?>">
-                    <strong>Menú</strong><span>Organización del panel de WordPress.</span>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=repository')); ?>">
-                    <strong>Repositorio</strong><span>Plugins y temas disponibles.</span>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=adminui')); ?>">
-                    <strong>Login</strong><span>Logo, fondo y crédito.</span>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=branding')); ?>">
-                    <strong>Identidad</strong><span>Nombre y logo para clientes.</span>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=monitoring')); ?>">
-                    <strong>Monitorización</strong><span>Conexión de solo lectura con la consola.</span>
-                </a>
-            </div>
-            <h2>Soporte</h2>
-            <div class="premiero-card">
-                <?php premiero_render_support_inner(); ?>
+        case 'info':
+            $info_brand_name  = premiero_get_brand_name();
+            $info_toolkit_name = premiero_get_toolkit_name();
+            $info_logo        = premiero_get_brand_logo_url( 'full' );
+            ?>
+            <div class="premiero-info-layout">
+                <div class="premiero-info-primary">
+                    <section class="premiero-info-brand">
+                        <?php if ( $info_logo ) : ?>
+                            <?php if ( premiero_is_white_label() ) : ?>
+                                <span class="premiero-info-wordmark">
+                                    <img src="<?php echo esc_url( $info_logo ); ?>" alt="<?php echo esc_attr( $info_brand_name ); ?>">
+                                </span>
+                            <?php else : ?>
+                                <a class="premiero-info-wordmark" href="https://premiero.es" target="_blank" rel="noopener">
+                                    <img src="<?php echo esc_url( $info_logo ); ?>" alt="Premiero">
+                                </a>
+                            <?php endif; ?>
+                        <?php else : ?>
+                            <a class="premiero-info-wordmark" href="https://premiero.es" target="_blank" rel="noopener">
+                                <span><?php echo esc_html( $info_brand_name ); ?></span>
+                            </a>
+                        <?php endif; ?>
+
+                        <p class="premiero-info-eyebrow">Administración WordPress</p>
+                        <h2><?php echo esc_html( $info_toolkit_name ); ?></h2>
+                        <p class="premiero-info-lead">
+                            <?php if ( premiero_is_white_label() ) : ?>
+                                Plugin desarrollado por <strong>Premiero para <?php echo esc_html( $info_brand_name ); ?></strong> para centralizar herramientas habituales de administración y personalización.
+                            <?php else : ?>
+                                Plugin desarrollado por <strong>Premiero</strong> para centralizar herramientas habituales de administración y personalización.
+                            <?php endif; ?>
+                        </p>
+
+                        <div class="premiero-info-warning">
+                            <p>Este plugin está orientado a desarrolladores y tareas de administración de WordPress. <strong>No se recomienda realizar cambios si no se tiene claro lo que se está haciendo.</strong></p>
+                        </div>
+
+                        <div class="premiero-info-actions">
+                            <a class="button button-primary" href="https://premiero.es" target="_blank" rel="noopener">Visitar premiero.es</a>
+                        </div>
+                    </section>
+
+                    <section class="premiero-info-panel">
+                        <h2>Acceso rápido</h2>
+                        <div class="premiero-info-tools">
+                            <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=code')); ?>">
+                                <strong>Código</strong><span>PHP, HTML y CSS personalizado.</span>
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=menuwp')); ?>">
+                                <strong>Menú</strong><span>Organización del panel de WordPress.</span>
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=repository')); ?>">
+                                <strong>Repositorio</strong><span>Plugins y temas disponibles.</span>
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=adminui')); ?>">
+                                <strong>Login</strong><span>Logo, fondo y crédito.</span>
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=branding')); ?>">
+                                <strong>Identidad</strong><span>Nombre y logo para clientes.</span>
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=monitoring')); ?>">
+                                <strong>Monitorización</strong><span>Conexión de solo lectura con la consola.</span>
+                            </a>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="premiero-info-details">
+                    <section class="premiero-info-panel">
+                        <h2>Proyecto abierto</h2>
+                        <p>El código se distribuye bajo licencia GPL v3 o posterior. Puedes estudiarlo, modificarlo y redistribuirlo respetando la licencia y los avisos de autoría.</p>
+                        <a href="<?php echo esc_url( PREMIERO_ATK_UPDATE_URI ); ?>" target="_blank" rel="noopener">Ver repositorio en GitHub</a>
+                    </section>
+
+                    <section class="premiero-info-panel">
+                        <h2>Actualizaciones</h2>
+                        <p>Las versiones estables se reciben desde GitHub Releases mediante el actualizador normal de WordPress.</p>
+                        <p><strong>Versión instalada:</strong> <?php echo esc_html( PREMIERO_ATK_VER ); ?></p>
+                    </section>
+
+                    <section class="premiero-info-panel">
+                        <h2>Soporte</h2>
+                        <?php premiero_render_support_inner(); ?>
+                    </section>
+                </div>
             </div>
         <?php break;
 
@@ -2114,17 +2195,13 @@ function premiero_render_settings_page() {
     echo '</div>';
 }
 
-/* ====================== Soporte (reutilizado dentro de Info) ====================== */
+/* ====================== Soporte (reutilizado dentro de Acerca de) ====================== */
 function premiero_render_support_inner() { ?>
-    <?php if ( premiero_is_white_label() ): ?>
-        <p>Plugin desarrollado por <strong>Premiero para <?php echo esc_html( premiero_get_brand_name() ); ?></strong>, orientado a acelerar tareas de administración.</p>
-    <?php else: ?>
-        <p>Plugin desarrollado por <strong>Premiero</strong> para acelerar tareas de administración.</p>
-    <?php endif; ?>
-    <p>Visítanos: <a href="https://premiero.es" target="_blank" rel="noopener">https://premiero.es</a></p>
-    <p><strong>¿Necesitas soporte?</strong> Puedes contactarnos a través de:</p>
-    <p>📧 <a href="mailto:hola@premiero.es">hola@premiero.es</a></p>
-    <p>💬 <a class="button button-primary" href="https://wa.me/34684774365" target="_blank" rel="noopener">Enviar mensaje por WhatsApp</a></p>
+    <p>¿Necesitas adaptar el plugin, integrarlo con otro sistema o desarrollar una solución a medida?</p>
+    <div class="premiero-info-actions">
+        <a class="button button-primary" href="mailto:hola@premiero.es">Enviar un correo</a>
+        <a class="button" href="https://wa.me/34684774365" target="_blank" rel="noopener">Contactar por WhatsApp</a>
+    </div>
 <?php }
 
 /* ====================== LOGIN: aplicar color/logo ====================== */

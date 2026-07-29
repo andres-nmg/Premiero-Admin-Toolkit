@@ -808,11 +808,13 @@ final class Premiero_Console_Client {
 				'size_bytes'  => isset( $storage['total_bytes'] ) ? self::normalize_size_value( $storage['total_bytes'] ) : null,
 			),
 			'identity'       => array(
-				'mode'        => 'white_label' === $branding['mode'] ? 'white_label' : 'premiero',
-				'name'        => sanitize_text_field( get_bloginfo( 'name' ) ),
-				'logo_url'    => $branding['client_logo_url'],
-				'favicon_url' => $branding['client_favicon_url'],
-				'color'       => $branding['background_color'],
+				'mode'             => 'white_label' === $branding['mode'] ? 'white_label' : 'premiero',
+				'name'             => sanitize_text_field( get_bloginfo( 'name' ) ),
+				'logo_url'         => $branding['client_logo_url'],
+				'logo_is_light'    => $branding['client_logo_is_light'],
+				'favicon_url'      => $branding['client_favicon_url'],
+				'favicon_is_light' => $branding['client_favicon_is_light'],
+				'color'            => $branding['background_color'],
 			),
 			'updates'       => array(
 				'status'          => $updates_status,
@@ -983,8 +985,10 @@ final class Premiero_Console_Client {
 		$client_logo_id  = (int) get_option( 'premiero_login_logo_id', 0 );
 		$client_logo_url = self::attachment_url( $client_logo_id );
 		if ( ! $client_logo_url ) {
-			$client_logo_url = self::attachment_url( (int) get_theme_mod( 'custom_logo', 0 ) );
+			$client_logo_id  = (int) get_theme_mod( 'custom_logo', 0 );
+			$client_logo_url = self::attachment_url( $client_logo_id );
 		}
+		$client_favicon_id  = (int) get_option( 'site_icon', 0 );
 		$client_favicon_url = function_exists( 'get_site_icon_url' )
 			? get_site_icon_url( 64 )
 			: '';
@@ -996,7 +1000,9 @@ final class Premiero_Console_Client {
 			'maintenance_brand_name' => sanitize_text_field( (string) $brand_name ),
 			'maintenance_logo_url'   => esc_url_raw( (string) $maintenance_logo ),
 			'client_logo_url'        => esc_url_raw( (string) $client_logo_url ),
+			'client_logo_is_light'   => self::attachment_is_light( $client_logo_id ),
 			'client_favicon_url'     => esc_url_raw( (string) $client_favicon_url ),
+			'client_favicon_is_light'=> self::attachment_is_light( $client_favicon_id ),
 			'background_color'       => $background ? $background : '',
 		);
 	}
@@ -1370,6 +1376,104 @@ final class Premiero_Console_Client {
 		}
 		$src = wp_get_attachment_image_src( $attachment_id, 'full' );
 		return ! empty( $src[0] ) ? esc_url_raw( $src[0] ) : '';
+	}
+
+	/**
+	 * Detecta imágenes predominantemente claras para mejorar su contraste.
+	 *
+	 * El resultado se cachea por archivo y no se recalcula en cada envío.
+	 *
+	 * @param int $attachment_id Adjunto.
+	 * @return bool
+	 */
+	private static function attachment_is_light( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id || ! function_exists( 'imagecreatetruecolor' ) ) {
+			return false;
+		}
+
+		$path = get_attached_file( $attachment_id );
+		if ( ! $path || ! is_readable( $path ) ) {
+			return false;
+		}
+
+		$modified  = (int) @filemtime( $path );
+		$cache_key = 'premiero_console_tone_' . md5( $attachment_id . '|' . $modified );
+		$cached    = get_transient( $cache_key );
+		if ( 'light' === $cached || 'dark' === $cached ) {
+			return 'light' === $cached;
+		}
+
+		$info = @getimagesize( $path );
+		$type = is_array( $info ) && isset( $info[2] ) ? (int) $info[2] : 0;
+		$image = false;
+
+		if ( IMAGETYPE_PNG === $type && function_exists( 'imagecreatefrompng' ) ) {
+			$image = @imagecreatefrompng( $path );
+		} elseif ( IMAGETYPE_JPEG === $type && function_exists( 'imagecreatefromjpeg' ) ) {
+			$image = @imagecreatefromjpeg( $path );
+		} elseif ( IMAGETYPE_GIF === $type && function_exists( 'imagecreatefromgif' ) ) {
+			$image = @imagecreatefromgif( $path );
+		} elseif ( defined( 'IMAGETYPE_WEBP' ) && IMAGETYPE_WEBP === $type && function_exists( 'imagecreatefromwebp' ) ) {
+			$image = @imagecreatefromwebp( $path );
+		}
+
+		if ( ! $image ) {
+			set_transient( $cache_key, 'dark', 30 * DAY_IN_SECONDS );
+			return false;
+		}
+
+		$sample = imagecreatetruecolor( 16, 16 );
+		if ( ! $sample ) {
+			imagedestroy( $image );
+			return false;
+		}
+		imagealphablending( $sample, false );
+		imagesavealpha( $sample, true );
+		imagecopyresampled(
+			$sample,
+			$image,
+			0,
+			0,
+			0,
+			0,
+			16,
+			16,
+			imagesx( $image ),
+			imagesy( $image )
+		);
+		imagedestroy( $image );
+
+		$visible = 0;
+		$light   = 0;
+		$total   = 0;
+		for ( $y = 0; $y < 16; ++$y ) {
+			for ( $x = 0; $x < 16; ++$x ) {
+				$pixel = imagecolorat( $sample, $x, $y );
+				$alpha = ( $pixel >> 24 ) & 0x7F;
+				if ( $alpha > 100 ) {
+					continue;
+				}
+
+				$red       = ( $pixel >> 16 ) & 0xFF;
+				$green     = ( $pixel >> 8 ) & 0xFF;
+				$blue      = $pixel & 0xFF;
+				$luminance = ( 0.2126 * $red ) + ( 0.7152 * $green ) + ( 0.0722 * $blue );
+				++$visible;
+				$total += $luminance;
+				if ( $luminance >= 210 ) {
+					++$light;
+				}
+			}
+		}
+		imagedestroy( $sample );
+
+		$is_light = $visible > 0
+			&& ( $light / $visible ) >= 0.6
+			&& ( $total / $visible ) >= 195;
+		set_transient( $cache_key, $is_light ? 'light' : 'dark', 30 * DAY_IN_SECONDS );
+
+		return $is_light;
 	}
 
 	/**
