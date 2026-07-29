@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.3.1
+Stable tag: 3.3.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -41,6 +41,16 @@ Sí. El proyecto se distribuye bajo GPLv3 o posterior. Conserva los avisos de li
 WordPress consulta la última Release estable del repositorio público de GitHub. Cuando existe una versión superior, aparece como una actualización normal del plugin.
 
 == Changelog ==
+
+= 3.3.3 =
+
+* Renovada la pestaña Acerca de con una presentación responsive, accesos rápidos y soporte integrado.
+* Conservado el funcionamiento de las herramientas, la identidad personalizada y la monitorización.
+* Añadida la licencia GPL completa y documentación preparada para distribución pública.
+
+= 3.3.2 =
+
+* El fondo oscuro de logos y favicons se aplica únicamente a imágenes predominantemente claras.
 
 = 3.3.1 =
 
