@@ -1,23 +1,21 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.3.3`
-- **Etiqueta:** `v3.3.3`
-- **Título de la Release:** `Premiero Admin Toolkit 3.3.3`
+- **Versión:** `3.3.4`
+- **Etiqueta:** `v3.3.4`
+- **Título de la Release:** `Premiero Admin Toolkit 3.3.4`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.3.3
+## Premiero Admin Toolkit 3.3.4
 
-Esta versión renueva la presentación de la pestaña **Acerca de** y completa la preparación del proyecto para su distribución pública, sin modificar el funcionamiento de las herramientas existentes.
+Esta versión evita que los avisos de actualización detectados por Wordfence aparezcan duplicados como incidencias de seguridad en Premiero Maintenance Console.
 
 ### Cambios principales
 
-- Nueva pestaña Acerca de responsive con identidad de Premiero, proyecto abierto, actualizaciones, aviso para administradores y soporte.
-- Accesos rápidos a Código, Menú, Repositorio, Login, Identidad y Monitorización.
-- Conservada la identidad personalizada para clientes.
-- Añadida la licencia completa GPL-3.0-or-later.
-- Actualizada la documentación de instalación, publicación y soporte.
-- Se mantienen las actualizaciones automáticas mediante GitHub Releases.
+- Los avisos de actualización de plugins, temas y WordPress se muestran únicamente en el bloque de actualizaciones de la consola.
+- Wordfence continúa analizando y mostrando esos avisos dentro de su propio panel.
+- Las vulnerabilidades, el malware, los archivos alterados y los demás hallazgos de seguridad continúan informándose a la consola.
+- Se mantiene un fallback compatible con versiones de Wordfence que no permitan enumerar sus incidencias.
 
 ### Requisitos
 

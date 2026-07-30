@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.3.3
+Stable tag: 3.3.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -41,6 +41,11 @@ Sí. El proyecto se distribuye bajo GPLv3 o posterior. Conserva los avisos de li
 WordPress consulta la última Release estable del repositorio público de GitHub. Cuando existe una versión superior, aparece como una actualización normal del plugin.
 
 == Changelog ==
+
+= 3.3.4 =
+
+* Evitado que los avisos de actualización de Wordfence se dupliquen como incidencias de seguridad en Premiero Maintenance Console.
+* Se siguen informando las vulnerabilidades, el malware, los archivos alterados y el resto de hallazgos de seguridad de Wordfence.
 
 = 3.3.3 =
 
