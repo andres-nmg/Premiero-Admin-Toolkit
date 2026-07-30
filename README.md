@@ -43,7 +43,7 @@ Si un sitio tiene instalado TecnoDerecho Admin Toolkit:
 1. Actualiza `Version` y `PREMIERO_ATK_VER` en `premiero-admin-toolkit.php`.
 2. Actualiza `Stable tag` y el registro de cambios de `readme.txt`.
 3. Confirma y sube los cambios a la rama `main`.
-4. Crea una etiqueta y una Release con el mismo número, por ejemplo `v3.3.4`.
+4. Crea una etiqueta y una Release con el mismo número, por ejemplo `v3.3.5`.
 5. Al publicar la Release, GitHub Actions generará y adjuntará automáticamente `premiero-admin-toolkit.zip`.
 
 Después de publicar, espera a que el workflow `Build WordPress plugin release` termine correctamente antes de anunciar o instalar la versión.

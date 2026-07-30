@@ -1,21 +1,21 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.3.4`
-- **Etiqueta:** `v3.3.4`
-- **Título de la Release:** `Premiero Admin Toolkit 3.3.4`
+- **Versión:** `3.3.5`
+- **Etiqueta:** `v3.3.5`
+- **Título de la Release:** `Premiero Admin Toolkit 3.3.5`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.3.4
+## Premiero Admin Toolkit 3.3.5
 
-Esta versión evita que los avisos de actualización detectados por Wordfence aparezcan duplicados como incidencias de seguridad en Premiero Maintenance Console.
+Esta versión permite que Premiero Maintenance Console filtre centralmente los avisos de actualización detectados por Wordfence.
 
 ### Cambios principales
 
-- Los avisos de actualización de plugins, temas y WordPress se muestran únicamente en el bloque de actualizaciones de la consola.
-- Wordfence continúa analizando y mostrando esos avisos dentro de su propio panel.
-- Las vulnerabilidades, el malware, los archivos alterados y los demás hallazgos de seguridad continúan informándose a la consola.
-- Se mantiene un fallback compatible con versiones de Wordfence que no permitan enumerar sus incidencias.
+- El agente envía por separado el total de incidencias y las que corresponden únicamente a actualizaciones.
+- La consola decide cuáles retirar del estado de seguridad.
+- Las vulnerabilidades, el malware, los archivos alterados y los demás hallazgos continúan informándose.
+- Las versiones de Wordfence que no permitan clasificar los avisos conservan el total completo como medida de seguridad.
 
 ### Requisitos
 
