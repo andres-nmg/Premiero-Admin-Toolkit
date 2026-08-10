@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.4.0
+ * Version:     3.4.1
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero

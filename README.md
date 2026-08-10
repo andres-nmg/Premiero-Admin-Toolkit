@@ -99,4 +99,11 @@ La sincronización ligera se programa cada 12 horas. El cálculo de tamaño se
 ejecuta aparte, semanalmente, y su resultado queda cacheado para no recorrer
 archivos durante el tráfico normal.
 
-Si quieres saber más sobre esta consola ponte en contacto conmigo.
+El botón **Desconectar** elimina únicamente la clave guardada en esa instalación.
+Si también se quiere invalidar la clave que conserva la consola, debe usarse
+**Revocar conexión** en la ficha correspondiente de la consola.
+
+En producción la URL de la consola debe utilizar HTTPS. Para facilitar las
+pruebas, HTTP se admite únicamente cuando WordPress está configurado como
+`local` o `development` y la consola utiliza `localhost`, un dominio `.local`
+o `.test`, o una dirección IP privada.
