@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.3.5
+ * Version:     3.4.0
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.3.5');
+define('PREMIERO_ATK_VER', '3.4.0');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_URL', plugin_dir_url(__FILE__));
@@ -73,6 +73,22 @@ require_once PREMIERO_ATK_DIR . 'includes/class-premiero-console-client.php';
 Premiero_Console_Client::init();
 register_activation_hook( __FILE__, [ 'Premiero_Console_Client', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'Premiero_Console_Client', 'deactivate' ] );
+
+$premiero_composer_autoload = PREMIERO_ATK_DIR . 'vendor/autoload.php';
+if ( file_exists( $premiero_composer_autoload ) ) {
+    require_once $premiero_composer_autoload;
+}
+require_once PREMIERO_ATK_DIR . 'includes/remote-backups/class-premiero-sftp-client.php';
+require_once PREMIERO_ATK_DIR . 'includes/remote-backups/class-premiero-backup-sync-queue.php';
+require_once PREMIERO_ATK_DIR . 'includes/remote-backups/class-premiero-backup-detector.php';
+require_once PREMIERO_ATK_DIR . 'includes/remote-backups/class-premiero-backup-verifier.php';
+require_once PREMIERO_ATK_DIR . 'includes/remote-backups/class-premiero-backup-worker.php';
+require_once PREMIERO_ATK_DIR . 'includes/remote-backups/class-premiero-remote-backup-settings.php';
+require_once PREMIERO_ATK_DIR . 'includes/remote-backups/class-premiero-backup-reconciler.php';
+require_once PREMIERO_ATK_DIR . 'includes/remote-backups/class-premiero-remote-backups.php';
+Premiero_Remote_Backups::init();
+register_activation_hook( __FILE__, [ 'Premiero_Remote_Backups', 'activate' ] );
+register_deactivation_hook( __FILE__, [ 'Premiero_Remote_Backups', 'deactivate' ] );
 
 function premiero_is_white_label() {
     return (bool) get_option( PREMIERO_OPT_WHITE_LABEL_ENABLED, false )
@@ -1368,6 +1384,7 @@ function premiero_admin_header($active_tab = 'info') {
         'adminui'    => ['Login', 'Personaliza la pantalla de acceso y su crédito.'],
         'branding'   => ['Identidad', 'Adapta el nombre y el logo del plugin para un cliente.'],
         'monitoring' => ['Monitorización', 'Conecta esta instalación con la consola privada de mantenimiento.'],
+        'remote-backups' => ['Copias de Seguridad', 'Sincroniza automáticamente las copias terminadas de UpdraftPlus por SFTP.'],
     ];
     $section = $sections[$active_tab] ?? $sections['info'];
     ?>
@@ -1398,6 +1415,7 @@ function premiero_tabs_nav($active) {
         'adminui'    => 'Login',
         'branding'   => 'Identidad',
         'monitoring' => 'Monitorización',
+        'remote-backups' => 'Copias de Seguridad',
     ];
     echo '<h2 class="nav-tab-wrapper">';
     foreach ($tabs as $slug => $label) {
@@ -1441,6 +1459,59 @@ add_action('admin_enqueue_scripts', function($hook){
     .premiero-overview a:hover{border-color:#2271b1;box-shadow:0 1px 3px rgba(0,0,0,.08)}
     .premiero-overview strong{display:block;margin-bottom:5px;color:#1d2327}
     .premiero-overview span{color:#646970}
+    .premiero-remote-backups{max-width:1180px;padding-right:20px;color:#1d2327}
+    .premiero-remote-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin:12px 0 20px}
+    .premiero-remote-header h2{margin:0;font-size:20px;line-height:1.4}
+    .premiero-remote-header p:not(.premiero-remote-eyebrow){margin:4px 0 0;color:#646970;font-size:13px}
+    .premiero-remote-eyebrow{margin:0 0 6px;color:#646970;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+    .premiero-remote-status{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;padding:7px 11px;border:1px solid #c3e6cb;border-radius:999px;background:#edfaef;color:#116329;font-size:12px;font-weight:600}
+    .premiero-remote-status span{width:7px;height:7px;border-radius:50%;background:#00a32a}
+    .premiero-remote-status.is-off{border-color:#dcdcde;background:#f6f7f7;color:#646970}
+    .premiero-remote-status.is-off span{background:#8c8f94}
+    .premiero-remote-daily{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 24px;border:1px solid #c3d4e8;border-left:4px solid #2271b1;border-radius:8px;background:linear-gradient(135deg,#f7fbff,#fff);box-shadow:0 2px 7px rgba(34,113,177,.08)}
+    .premiero-remote-daily h3{margin:0 0 5px;font-size:18px}
+    .premiero-remote-daily p:not(.premiero-remote-eyebrow){max-width:650px;margin:0;color:#50575e;line-height:1.5}
+    .premiero-remote-quick-form{display:flex;flex:0 0 auto;flex-direction:column;align-items:center;gap:7px;margin:0}
+    .premiero-remote-quick-form .button-hero{min-height:40px;padding:7px 18px;line-height:1.3;white-space:nowrap}
+    .premiero-remote-quick-form span{color:#646970;font-size:11px}
+    .premiero-remote-backups .premiero-overview{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0 26px}
+    .premiero-remote-backups .premiero-overview a{position:relative;padding:14px 15px;border-radius:7px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+    .premiero-remote-backups .premiero-overview a:before{position:absolute;top:0;bottom:0;left:0;width:3px;border-radius:7px 0 0 7px;background:#8c8f94;content:""}
+    .premiero-remote-backups .premiero-overview a.is-success:before{background:#00a32a}
+    .premiero-remote-backups .premiero-overview a.is-warning:before{background:#dba617}
+    .premiero-remote-backups .premiero-overview a.is-danger:before{background:#d63638}
+    .premiero-remote-backups .premiero-overview strong{font-size:12px}
+    .premiero-remote-backups .premiero-overview span{font-size:12px}
+    .premiero-remote-queue{max-width:none!important;margin-top:0!important;padding:22px 24px;border:1px solid #dcdcde;border-radius:8px;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.04)}
+    .premiero-remote-queue h3{margin:0 0 6px;font-size:18px}
+    .premiero-remote-queue>p{margin:0 0 16px;color:#646970;line-height:1.5}
+    .premiero-remote-table-wrap{width:100%;overflow-x:auto;border:1px solid #dcdcde;border-radius:5px}
+    .premiero-remote-table{min-width:820px;border:0!important;margin:0!important}
+    .premiero-remote-table th{white-space:nowrap;background:#f6f7f7;color:#50575e;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+    .premiero-remote-table td,.premiero-remote-table th{padding:11px 12px;vertical-align:top}
+    .premiero-remote-table td:nth-child(3){min-width:180px}
+    .premiero-remote-settings-panel{margin:22px 0 0;border:1px solid #dcdcde;border-radius:8px;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.03)}
+    .premiero-remote-settings-panel>summary{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:17px 20px;cursor:pointer;list-style:none}
+    .premiero-remote-settings-panel>summary::-webkit-details-marker{display:none}
+    .premiero-remote-settings-panel>summary strong{display:block;font-size:14px}
+    .premiero-remote-settings-panel>summary small{display:block;margin-top:3px;color:#646970;font-size:12px;font-weight:400}
+    .premiero-remote-settings-chevron{width:8px;height:8px;border-right:2px solid #646970;border-bottom:2px solid #646970;transform:rotate(45deg);transition:transform .15s ease}
+    .premiero-remote-settings-panel[open]>summary{border-bottom:1px solid #dcdcde;background:#f6f7f7;border-radius:8px 8px 0 0}
+    .premiero-remote-settings-panel[open] .premiero-remote-settings-chevron{transform:rotate(225deg)}
+    .premiero-remote-settings-body{padding:20px 24px}
+    .premiero-remote-help{margin-bottom:18px;padding:13px 15px;border-left:3px solid #8c8f94;background:#f6f7f7;color:#50575e;font-size:12px;line-height:1.5}
+    .premiero-remote-help strong{color:#1d2327}
+    .premiero-remote-help p{margin:4px 0 0}
+    .premiero-remote-settings-form{max-width:920px;margin:0}
+    .premiero-remote-settings-form .form-table{margin-top:0}
+    .premiero-remote-settings-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:12px}
+    .premiero-remote-settings-actions .description{margin-left:4px}
+    .premiero-remote-fingerprint{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;max-width:920px;margin-top:22px;padding:13px 15px;border:1px solid #dcdcde;border-radius:6px;background:#f6f7f7;font-size:12px}
+    .premiero-remote-fingerprint strong,.premiero-remote-fingerprint span{display:block}
+    .premiero-remote-fingerprint span{margin-top:2px;color:#646970}
+    .premiero-remote-fingerprint code{overflow-wrap:anywhere;color:#50575e}
+    .premiero-remote-fingerprint form{margin:0}
+    .premiero-remote-settings-body section{max-width:920px!important}
     .premiero-info-layout{display:grid;grid-template-columns:minmax(340px,1.05fr) minmax(420px,.95fr);gap:28px;align-items:start}
     .premiero-info-brand,.premiero-info-panel{box-sizing:border-box;border:1px solid #dcdcde;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05)}
     .premiero-info-brand{padding:36px;border-top:5px solid #6b1c00}
@@ -1514,6 +1585,30 @@ add_action('admin_enqueue_scripts', function($hook){
         .nav-tab-wrapper .nav-tab{padding:7px 10px;font-size:13px}
         .premiero-card{padding:16px;margin-right:10px}
         .premiero-overview{grid-template-columns:1fr}
+        .premiero-remote-backups{padding-right:10px}
+        .premiero-remote-header{align-items:flex-start;gap:12px;margin-bottom:16px}
+        .premiero-remote-header h2{font-size:20px}
+        .premiero-remote-status{padding:6px 9px;font-size:11px}
+        .premiero-remote-daily{display:block;padding:18px 16px}
+        .premiero-remote-daily h3{font-size:17px}
+        .premiero-remote-quick-form{align-items:flex-start;margin-top:16px}
+        .premiero-remote-quick-form .button-hero{width:100%}
+        .premiero-remote-backups .premiero-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:18px}
+        .premiero-remote-backups .premiero-overview a{padding:12px}
+        .premiero-remote-queue{padding:16px;margin-right:0!important}
+        .premiero-remote-table-wrap{margin:0 -1px;width:calc(100% + 2px)}
+        .premiero-remote-settings-panel{margin-right:0}
+        .premiero-remote-settings-body{padding:16px}
+        .premiero-remote-settings-form .form-table,.premiero-remote-settings-form .form-table tbody,.premiero-remote-settings-form .form-table tr,.premiero-remote-settings-form .form-table th,.premiero-remote-settings-form .form-table td{display:block;width:100%;box-sizing:border-box}
+        .premiero-remote-settings-form .form-table tr{padding:10px 0;border-bottom:1px solid #f0f0f1}
+        .premiero-remote-settings-form .form-table th{padding:0 0 5px}
+        .premiero-remote-settings-form .form-table td{padding:0}
+        .premiero-remote-settings-form .regular-text{max-width:100%;width:100%}
+        .premiero-remote-settings-actions{align-items:stretch;flex-direction:column}
+        .premiero-remote-settings-actions .button{width:100%;text-align:center}
+        .premiero-remote-settings-actions .description{margin:2px 0 0}
+        .premiero-remote-fingerprint{grid-template-columns:1fr;gap:8px}
+        .premiero-remote-fingerprint .button{width:100%;text-align:center}
         .premiero-info-layout{grid-template-columns:1fr}
         .premiero-info-brand{padding:26px}
         .premiero-info-tools{grid-template-columns:1fr}
@@ -1675,6 +1770,9 @@ function premiero_render_settings_page() {
                             </a>
                             <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=monitoring')); ?>">
                                 <strong>Monitorización</strong><span>Conexión de solo lectura con la consola.</span>
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=remote-backups')); ?>">
+                                <strong>Copias de Seguridad</strong><span>Sincronización SFTP con cualquier servidor compatible.</span>
                             </a>
                         </div>
                     </section>
@@ -2067,6 +2165,10 @@ function premiero_render_settings_page() {
 
         case 'monitoring':
             Premiero_Console_Client::render_tab();
+        break;
+
+        case 'remote-backups':
+            Premiero_Remote_Backup_Settings::render_tab();
         break;
 
         /* ====================== PESTAÑA ADMIN UI ====================== */

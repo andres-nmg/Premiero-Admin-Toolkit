@@ -789,6 +789,9 @@ final class Premiero_Console_Client {
 		$issue_count    = isset( $security['issue_count'] ) && null !== $security['issue_count']
 			? absint( $security['issue_count'] )
 			: 0;
+		$update_issue_count = isset( $security['update_issue_count'] ) && null !== $security['update_issue_count']
+			? absint( $security['update_issue_count'] )
+			: null;
 
 		return array(
 			'schema_version' => self::SCHEMA_VERSION,
@@ -833,6 +836,7 @@ final class Premiero_Console_Client {
 				'provider'     => 'wordfence',
 				'status'       => $security_state,
 				'last_scan_at' => $last_scan,
+				'update_issues' => null !== $update_issue_count ? min( 65535, $update_issue_count ) : null,
 				'issues'       => array(
 					'critical' => 0,
 					'high'     => 0,
@@ -1193,6 +1197,7 @@ final class Premiero_Console_Client {
 			'state'        => $active ? 'never' : 'unavailable',
 			'last_scan_at' => 0,
 			'issue_count'  => null,
+			'update_issue_count' => null,
 			'failure_code' => '',
 		);
 
@@ -1221,7 +1226,8 @@ final class Premiero_Console_Client {
 			if ( class_exists( 'wfIssues' ) && method_exists( 'wfIssues', 'shared' ) ) {
 				$issues = wfIssues::shared();
 				if ( is_object( $issues ) && method_exists( $issues, 'getIssueCount' ) ) {
-					$result['issue_count'] = (int) $issues->getIssueCount();
+					$result['issue_count']        = max( 0, (int) $issues->getIssueCount() );
+					$result['update_issue_count'] = self::count_wordfence_update_issues( $issues, $result['issue_count'] );
 				}
 				if ( method_exists( 'wfIssues', 'hasScanFailed' ) ) {
 					$failure_code = wfIssues::hasScanFailed();
@@ -1249,6 +1255,70 @@ final class Premiero_Console_Client {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Cuenta por separado los avisos de versiones pendientes de Wordfence.
+	 * La consola recibe este dato junto al total y decide qué incidencias
+	 * forman parte del estado de seguridad.
+	 *
+	 * Si la versión instalada no permite enumerar las incidencias se devuelve
+	 * null. La consola conservará entonces el total completo, evitando ocultar
+	 * alertas por una incompatibilidad.
+	 *
+	 * @param object $issues Instancia compartida de wfIssues.
+	 * @param int    $total  Total de incidencias nuevas.
+	 * @return int|null Número de avisos de actualización o null.
+	 */
+	private static function count_wordfence_update_issues( $issues, $total ) {
+		$total = max( 0, (int) $total );
+		if ( ! is_object( $issues ) || ! method_exists( $issues, 'getIssues' ) ) {
+			return null;
+		}
+		if ( 0 === $total ) {
+			return 0;
+		}
+
+		$update_types = array(
+			'wfPluginUpgrade',
+			'wfThemeUpgrade',
+			'wfUpgrade',
+		);
+		$update_count = 0;
+		$offset       = 0;
+		$batch_size   = 100;
+
+		while ( $offset < $total ) {
+			$limit = min( $batch_size, $total - $offset );
+			$page  = $issues->getIssues( $offset, $limit, 0, 0 );
+
+			if ( ! is_array( $page ) || ! isset( $page['new'] ) || ! is_array( $page['new'] ) ) {
+				return null;
+			}
+
+			$page_issues = $page['new'];
+			$page_count  = count( $page_issues );
+			if ( 0 === $page_count ) {
+				break;
+			}
+
+			foreach ( $page_issues as $issue ) {
+				$type = is_array( $issue ) && isset( $issue['type'] )
+					? (string) $issue['type']
+					: '';
+
+				if ( in_array( $type, $update_types, true ) ) {
+					++$update_count;
+				}
+			}
+
+			$offset += $page_count;
+			if ( $page_count < $limit ) {
+				break;
+			}
+		}
+
+		return $update_count;
 	}
 
 	/**
