@@ -12,6 +12,7 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 - Personalización de la pantalla de acceso.
 - Identidad personalizada por cliente, con nombre y logo propios.
 - Monitorización saliente y de solo lectura mediante la consola privada.
+- Sincronización automática por SFTP de los backups de UpdraftPlus con cualquier servidor compatible.
 - Actualizaciones desde las Releases de este repositorio.
 
 ## Requisitos
@@ -29,6 +30,19 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 
 Las versiones posteriores aparecerán en el sistema de actualizaciones de WordPress.
 
+## Backups remotos por SFTP
+
+1. Mantén en UpdraftPlus la generación, la programación y la restauración, y selecciona **Ninguno** como almacenamiento remoto.
+2. En `Premiero > Backups remotos`, introduce los datos del servidor SFTP de destino.
+3. Pulsa **Probar conexión** una vez para comprobar escritura, tamaño y clave SSH.
+4. Activa la sincronización y guarda la configuración.
+
+Cuando UpdraftPlus termina correctamente una copia, Premiero registra sus archivos y espera al menos 60 segundos sin cambios antes de subirlos. Cada archivo se publica desde un temporal `.part`, se verifica por tamaño y queda marcado en una cola persistente para no volver a enviarlo. Los fallos se conservan como pendientes y se reintentan con espera progresiva. Un escaneo cada 15 minutos actúa como respaldo del hook de finalización, por lo que WP-Cron debe funcionar en la instalación.
+
+La opción **Mantener el servidor SFTP sincronizado con las copias conservadas por UpdraftPlus** convierte el historial de UpdraftPlus en la fuente de verdad: un archivo remoto ausente se vuelve a subir y un conjunto retirado por la política de retención se elimina también del servidor. Premiero solo puede borrar archivos que haya sincronizado y registrado previamente, nunca borra copias locales, espera al menos 30 minutos, comprueba nuevamente el historial y no elimina nada mientras exista una transferencia pendiente.
+
+El módulo no cambia la programación ni la retención configuradas en UpdraftPlus y no escribe en los datos utilizados por Premiero Control.
+
 ### Migración desde TecnoDerecho
 
 Si un sitio tiene instalado TecnoDerecho Admin Toolkit:
@@ -43,7 +57,7 @@ Si un sitio tiene instalado TecnoDerecho Admin Toolkit:
 1. Actualiza `Version` y `PREMIERO_ATK_VER` en `premiero-admin-toolkit.php`.
 2. Actualiza `Stable tag` y el registro de cambios de `readme.txt`.
 3. Confirma y sube los cambios a la rama `main`.
-4. Crea una etiqueta y una Release con el mismo número, por ejemplo `v3.3.5`.
+4. Crea una etiqueta y una Release con el mismo número, por ejemplo `v3.4.0`.
 5. Al publicar la Release, GitHub Actions generará y adjuntará automáticamente `premiero-admin-toolkit.zip`.
 
 Después de publicar, espera a que el workflow `Build WordPress plugin release` termine correctamente antes de anunciar o instalar la versión.
@@ -67,6 +81,7 @@ Los paquetes de terceros incluidos en `assets` conservan sus propios avisos de c
 - All-in-One WP Migration With Import: GPL-3.0-or-later.
 - PRO Elements: GPL-3.0-or-later y términos adicionales indicados en su `license.txt`.
 - Hello Elementor Child: GPL-3.0-or-later.
+- phpseclib 3: MIT.
 
 ## Soporte
 

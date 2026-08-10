@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.3.5
+Stable tag: 3.4.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,6 +16,8 @@ Premiero Admin Toolkit reúne en una única interfaz herramientas para gestionar
 La pestaña Identidad permite adaptar el nombre y el logo del plugin para cada cliente sin crear versiones separadas. La configuración permanece guardada al actualizar.
 
 La pestaña Monitorización permite emparejar una instalación con Premiero Maintenance Console. La comunicación siempre parte desde WordPress, está firmada y solo envía un resumen técnico; no admite acciones remotas ni transmite credenciales.
+
+La pestaña Backups remotos detecta las copias terminadas de UpdraftPlus y las sincroniza por SFTP con cualquier servidor compatible. Las transferencias se verifican por tamaño, se reanudan cuando quedan incompletas y se reintentan automáticamente. Opcionalmente, la retención remota replica los conjuntos conservados por UpdraftPlus sin modificar UpdraftPlus ni Premiero Maintenance Console.
 
 Las actualizaciones estables se distribuyen mediante GitHub Releases desde:
 
@@ -40,7 +42,29 @@ Sí. El proyecto se distribuye bajo GPLv3 o posterior. Conserva los avisos de li
 
 WordPress consulta la última Release estable del repositorio público de GitHub. Cuando existe una versión superior, aparece como una actualización normal del plugin.
 
+= ¿La subida SFTP se inicia automáticamente al terminar una copia? =
+
+Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 60 segundos sin cambios y encola todos los archivos del conjunto. Un escaneo cada 15 minutos sirve de respaldo si el hook no puede procesarse en ese momento. La instalación debe tener WP-Cron operativo.
+
+= ¿Puede el servidor SFTP conservar exactamente las mismas copias que UpdraftPlus? =
+
+Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
+
 == Changelog ==
+
+= 3.4.0 =
+
+* Añadida sincronización automática por SFTP de los backups terminados de UpdraftPlus con cualquier servidor compatible.
+* Incorporados detector de backups, cola persistente, cliente SFTP, worker y verificador independientes.
+* Las transferencias incompletas se reanudan y los fallos se reintentan con espera progresiva.
+* Los archivos se publican desde un temporal .part y se marcan como sincronizados únicamente después de verificar el tamaño remoto.
+* Añadida reconciliación automática: recupera archivos eliminados del servidor SFTP y puede replicar de forma segura la retención configurada en UpdraftPlus.
+* La actividad se agrupa por copias de UpdraftPlus, muestra el progreso de sus archivos y separa el historial ya eliminado.
+* Los estados de subida interrumpidos se recuperan al verificar el archivo definitivo y la retención se revisa al terminar la cola.
+* Los borrados remotos se realizan por conjuntos, con margen de seguridad, sin transferencias pendientes y únicamente sobre archivos registrados por Premiero.
+* Las contraseñas se guardan cifradas y la clave SSH del servidor se verifica en conexiones posteriores.
+* Añadido phpseclib 3 y actualizado el empaquetado de Releases para incluir sus dependencias.
+* Premiero Control continúa leyendo sin cambios el estado original de UpdraftPlus.
 
 = 3.3.5 =
 
