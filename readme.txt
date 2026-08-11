@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.4.2
+Stable tag: 3.4.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -53,6 +53,20 @@ Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 
 Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
 
 == Changelog ==
+
+= 3.4.3 =
+
+* Eliminados por completo los avisos de demostración incluidos en 3.4.2.
+* Añadida una migración automática que limpia las demostraciones ya registradas al actualizar.
+* Unificada la identidad de un mismo aviso entre Escritorio, Plugins y el resto de pantallas del administrador.
+* Los avisos equivalentes se consolidan en una sola ficha y conservan su estado oculto.
+* Incorporada detección de avisos y banners añadidos dinámicamente después de cargar la página.
+* Ampliada la captura en administración normal, administración de red, administración de usuario y paneles dinámicos de plugins.
+* Excluidos los mensajes operativos temporales del editor de bloques, como guardado, publicación y confirmaciones tipo snackbar.
+* La ocultación nativa se guarda aunque se cambie de pantalla inmediatamente después de pulsar la X.
+* Los paneles dinámicos que reutilizan un contenedor recalculan el aviso y nunca heredan una ocultación anterior por error.
+* Corregido el responsive del buscador y de las fichas de avisos en tablet y móvil.
+* Sin cambios en Premiero Control, copias SFTP ni el resto de módulos.
 
 = 3.4.2 =
 

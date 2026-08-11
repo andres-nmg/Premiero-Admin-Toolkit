@@ -12,17 +12,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Premiero_Admin_Notices {
 
 	const OPT_REGISTRY = 'premiero_admin_notices_registry';
+	const OPT_SCHEMA   = 'premiero_admin_notices_schema';
 	const NONCE_ACTION = 'premiero_admin_notices_action';
 	const AJAX_ACTION  = 'premiero_capture_admin_notices';
 	const DISMISS_ACTION = 'premiero_dismiss_admin_notice';
-	const DEMO_UPDATE_ID = 'd3a0000000000001';
-	const DEMO_PRO_ID    = 'd3a0000000000002';
+	const SCHEMA_VERSION = 1;
 	const MAX_RECORDS  = 250;
 
 	private static $capture_depth = 0;
 
 	public static function init() {
-		add_action( 'admin_init', array( __CLASS__, 'seed_demo_notices' ), 1 );
+		add_action( 'admin_init', array( __CLASS__, 'migrate_registry' ), 1 );
 		add_action( 'admin_init', array( __CLASS__, 'process_actions' ), 5 );
 		add_action( 'wp_ajax_' . self::AJAX_ACTION, array( __CLASS__, 'capture_ajax' ) );
 		add_action( 'wp_ajax_' . self::DISMISS_ACTION, array( __CLASS__, 'dismiss_ajax' ) );
@@ -33,15 +33,13 @@ final class Premiero_Admin_Notices {
 			add_action( $hook, array( __CLASS__, 'start_capture_region' ), -999999 );
 			add_action( $hook, array( __CLASS__, 'end_capture_region' ), 999999 );
 		}
-
-		add_action( 'admin_notices', array( __CLASS__, 'render_demo_notices' ), 20 );
 	}
 
 	/**
 	 * Mantiene el aspecto original aunque los avisos queden delimitados para su captura.
 	 */
 	public static function render_capture_style() {
-		echo '<style id="premiero-notice-capture-style">.premiero-notice-capture{display:contents}.premiero-demo-admin-notice{padding:0}.premiero-demo-notice-layout{display:flex;align-items:center;gap:18px;min-height:92px;padding:18px 48px 18px 20px}.premiero-demo-notice-mark{display:flex;align-items:center;justify-content:center;flex:0 0 58px;width:58px;height:58px;border-radius:10px;background:#1d2327;color:#fff;font-size:18px;font-weight:800;letter-spacing:-.04em}.premiero-demo-notice-mark.is-update{background:#2271b1}.premiero-demo-notice-mark.is-pro{background:linear-gradient(135deg,#6b1c00,#b32d2e);font-size:14px;letter-spacing:.04em}.premiero-demo-notice-content{min-width:0}.premiero-demo-notice-content h3{margin:2px 0 5px;font-size:17px;line-height:1.35}.premiero-demo-notice-content p{margin:0;color:#50575e;line-height:1.5}.premiero-demo-notice-eyebrow{color:#646970;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.premiero-demo-notice-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}.premiero-demo-notice-actions .description{color:#646970}@media(max-width:782px){.premiero-demo-notice-layout{align-items:flex-start;gap:12px;padding:15px 42px 15px 14px}.premiero-demo-notice-mark{flex-basis:44px;width:44px;height:44px;border-radius:8px;font-size:14px}.premiero-demo-notice-mark.is-pro{font-size:11px}.premiero-demo-notice-content h3{font-size:15px}}</style>';
+		echo '<style id="premiero-notice-capture-style">.premiero-notice-capture{display:contents}</style>';
 	}
 
 	public static function start_capture_region() {
@@ -58,75 +56,16 @@ final class Premiero_Admin_Notices {
 	}
 
 	/**
-	 * Registra las demostraciones para que ya estén disponibles en la primera carga.
+	 * Limpia los avisos de demostración de 3.4.2 y consolida duplicados.
 	 */
-	public static function seed_demo_notices() {
-		if ( ! is_admin() || wp_doing_ajax() || ! current_user_can( 'manage_options' ) ) {
+	public static function migrate_registry() {
+		if ( ! is_admin() || (int) get_option( self::OPT_SCHEMA, 0 ) >= self::SCHEMA_VERSION ) {
 			return;
 		}
 
-		$registry = self::get_registry();
-		$changed  = false;
-		$now      = time();
-		foreach ( self::demo_definitions() as $fingerprint => $demo ) {
-			if ( isset( $registry[ $fingerprint ] ) ) {
-				continue;
-			}
-			$registry[ $fingerprint ] = array(
-				'fingerprint' => $fingerprint,
-				'text'        => $demo['text'],
-				'source'      => $demo['source'],
-				'severity'    => $demo['severity'],
-				'screen'      => 'administracion',
-				'first_seen'  => $now,
-				'last_seen'   => $now,
-				'appearances' => 1,
-				'hidden'      => false,
-			);
-			$changed = true;
-		}
-
-		if ( $changed ) {
-			update_option( self::OPT_REGISTRY, self::limit_registry( $registry ), false );
-		}
-	}
-
-	/**
-	 * Dos avisos persistentes para validar el flujo completo de registro y ocultación.
-	 */
-	public static function render_demo_notices() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-		$registry = self::get_registry();
-		?>
-		<?php if ( empty( $registry[ self::DEMO_UPDATE_ID ]['hidden'] ) ) : ?>
-			<div class="notice notice-warning is-dismissible premiero-demo-admin-notice" data-premiero-notice-id="<?php echo esc_attr( self::DEMO_UPDATE_ID ); ?>" data-premiero-notice-source="example-builder-demo">
-				<div class="premiero-demo-notice-layout">
-					<div class="premiero-demo-notice-mark is-update" aria-hidden="true">EB</div>
-					<div class="premiero-demo-notice-content">
-						<span class="premiero-demo-notice-eyebrow">Actualización disponible · Aviso de prueba</span>
-						<h3>Example Builder 4.2.0 ya está disponible</h3>
-						<p>Esta versión ficticia incluye mejoras de rendimiento, compatibilidad y seguridad.</p>
-						<div class="premiero-demo-notice-actions"><a class="button button-primary" href="<?php echo esc_url( admin_url( 'plugins.php?plugin_status=upgrade' ) ); ?>">Revisar actualización</a><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . PREMIERO_ATK_SLUG . '&tab=notices' ) ); ?>">Ver detalles</a></div>
-					</div>
-				</div>
-			</div>
-		<?php endif; ?>
-		<?php if ( empty( $registry[ self::DEMO_PRO_ID ]['hidden'] ) ) : ?>
-			<div class="notice notice-info is-dismissible premiero-demo-admin-notice" data-premiero-notice-id="<?php echo esc_attr( self::DEMO_PRO_ID ); ?>" data-premiero-notice-source="example-builder-demo">
-				<div class="premiero-demo-notice-layout">
-					<div class="premiero-demo-notice-mark is-pro" aria-hidden="true">PRO</div>
-					<div class="premiero-demo-notice-content">
-						<span class="premiero-demo-notice-eyebrow">Oferta especial · Aviso de prueba</span>
-						<h3>Descubre Example Builder Pro</h3>
-						<p>Desbloquea plantillas premium, herramientas avanzadas y soporte prioritario con la versión Pro ficticia.</p>
-						<div class="premiero-demo-notice-actions"><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . PREMIERO_ATK_SLUG . '&tab=notices' ) ); ?>">Conocer Pro</a><span class="description">Promoción de prueba generada por Premiero.</span></div>
-					</div>
-				</div>
-			</div>
-		<?php endif; ?>
-		<?php
+		$registry = self::consolidate_registry( self::get_registry(), true );
+		update_option( self::OPT_REGISTRY, self::limit_registry( $registry ), false );
+		update_option( self::OPT_SCHEMA, self::SCHEMA_VERSION, false );
 	}
 
 	public static function process_actions() {
@@ -210,17 +149,27 @@ final class Premiero_Admin_Notices {
 			if ( '' === $text ) {
 				continue;
 			}
-			$existing = isset( $registry[ $fingerprint ] ) && is_array( $registry[ $fingerprint ] )
-				? $registry[ $fingerprint ]
+			$match_key = isset( $notice['matchKey'] ) ? sanitize_key( $notice['matchKey'] ) : '';
+			if ( 1 !== preg_match( '/^[a-f0-9]{16}$/', $match_key ) ) {
+				$match_key = self::match_key( $text );
+			}
+			$record_key = self::find_record_key( $registry, $fingerprint, $match_key );
+			$existing   = isset( $registry[ $record_key ] ) && is_array( $registry[ $record_key ] )
+				? $registry[ $record_key ]
 				: array();
 			$severity = isset( $notice['severity'] ) ? sanitize_key( $notice['severity'] ) : 'custom';
 			if ( ! in_array( $severity, array( 'error', 'warning', 'success', 'info', 'custom' ), true ) ) {
 				$severity = 'custom';
 			}
-			$registry[ $fingerprint ] = array(
-				'fingerprint' => $fingerprint,
+			$source = substr( sanitize_text_field( isset( $notice['source'] ) ? $notice['source'] : 'No identificado' ), 0, 100 );
+			if ( 'No identificado' === $source && ! empty( $existing['source'] ) ) {
+				$source = (string) $existing['source'];
+			}
+			$registry[ $record_key ] = array(
+				'fingerprint' => $record_key,
+				'match_key'   => $match_key,
 				'text'        => substr( $text, 0, 1000 ),
-				'source'      => substr( sanitize_text_field( isset( $notice['source'] ) ? $notice['source'] : 'No identificado' ), 0, 100 ),
+				'source'      => $source,
 				'severity'    => $severity,
 				'screen'      => substr( sanitize_key( isset( $notice['screen'] ) ? $notice['screen'] : '' ), 0, 100 ),
 				'first_seen'  => isset( $existing['first_seen'] ) ? (int) $existing['first_seen'] : $now,
@@ -250,13 +199,18 @@ final class Premiero_Admin_Notices {
 		}
 
 		$registry = self::get_registry();
-		$existing = isset( $registry[ $fingerprint ] ) && is_array( $registry[ $fingerprint ] )
-			? $registry[ $fingerprint ]
-			: array();
 		$notice = isset( $_POST['notice'] ) ? json_decode( wp_unslash( $_POST['notice'] ), true ) : array();
 		if ( ! is_array( $notice ) ) {
 			$notice = array();
 		}
+		$match_key = isset( $notice['matchKey'] ) ? sanitize_key( $notice['matchKey'] ) : '';
+		if ( 1 !== preg_match( '/^[a-f0-9]{16}$/', $match_key ) && ! empty( $notice['text'] ) ) {
+			$match_key = self::match_key( $notice['text'] );
+		}
+		$record_key = self::find_record_key( $registry, $fingerprint, $match_key );
+		$existing   = isset( $registry[ $record_key ] ) && is_array( $registry[ $record_key ] )
+			? $registry[ $record_key ]
+			: array();
 
 		$text = isset( $existing['text'] ) ? (string) $existing['text'] : '';
 		if ( '' === $text && isset( $notice['text'] ) ) {
@@ -271,8 +225,12 @@ final class Premiero_Admin_Notices {
 			$severity = 'custom';
 		}
 		$now = time();
-		$registry[ $fingerprint ] = array(
-			'fingerprint' => $fingerprint,
+		if ( 1 !== preg_match( '/^[a-f0-9]{16}$/', $match_key ) ) {
+			$match_key = self::match_key( $text );
+		}
+		$registry[ $record_key ] = array(
+			'fingerprint' => $record_key,
+			'match_key'   => $match_key,
 			'text'        => substr( $text, 0, 1000 ),
 			'source'      => substr( sanitize_text_field( isset( $existing['source'] ) ? $existing['source'] : ( isset( $notice['source'] ) ? $notice['source'] : 'No identificado' ) ), 0, 100 ),
 			'severity'    => $severity,
@@ -284,17 +242,19 @@ final class Premiero_Admin_Notices {
 		);
 
 		update_option( self::OPT_REGISTRY, self::limit_registry( $registry ), false );
-		wp_send_json_success( array( 'hidden' => $fingerprint ) );
+		wp_send_json_success( array( 'hidden' => $record_key ) );
 	}
 
 	public static function render_capture_script() {
 		if ( ! is_admin() ) {
 			return;
 		}
-		$hidden = array();
+		$hidden         = array();
+		$hidden_matches = array();
 		foreach ( self::get_registry() as $fingerprint => $notice ) {
 			if ( ! empty( $notice['hidden'] ) ) {
 				$hidden[] = $fingerprint;
+				$hidden_matches[] = ! empty( $notice['match_key'] ) ? $notice['match_key'] : self::match_key( isset( $notice['text'] ) ? $notice['text'] : '' );
 			}
 		}
 		$data = array(
@@ -304,6 +264,7 @@ final class Premiero_Admin_Notices {
 			'nonce'         => wp_create_nonce( self::AJAX_ACTION ),
 			'canCapture'    => current_user_can( 'manage_options' ),
 			'hidden'        => $hidden,
+			'hiddenMatches' => array_values( array_unique( array_filter( $hidden_matches ) ) ),
 			'screen'        => function_exists( 'get_current_screen' ) && get_current_screen() ? get_current_screen()->id : '',
 		);
 		?>
@@ -311,10 +272,20 @@ final class Premiero_Admin_Notices {
 		(function () {
 			'use strict';
 			var config = <?php echo wp_json_encode( $data ); ?>;
-			var hidden = new Set(config.hidden || []);
+			var hiddenIds = new Set(config.hidden || []);
+			var hiddenMatches = new Set(config.hiddenMatches || []);
+			var recordById = {};
+			var sentRecords = new Set();
+			var scanTimer = null;
 
 			function normalize(text) {
 				return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 2000);
+			}
+
+			function canonicalMatch(text) {
+				var value = String(text || '');
+				if (value.normalize) value = value.normalize('NFD');
+				return value.replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 220);
 			}
 
 			function fingerprint(text) {
@@ -327,6 +298,26 @@ final class Premiero_Admin_Notices {
 					second = Math.imul(second ^ code, 3266489917);
 				}
 				return ('00000000' + (first >>> 0).toString(16)).slice(-8) + ('00000000' + (second >>> 0).toString(16)).slice(-8);
+			}
+
+			function matchKey(text) {
+				var normalized = canonicalMatch(text);
+				var first = 5381;
+				var second = 0;
+				for (var i = 0; i < normalized.length; i++) {
+					var code = normalized.charCodeAt(i);
+					first = (Math.imul(first, 33) ^ code) >>> 0;
+					second = (Math.imul(second, 65599) + code) >>> 0;
+				}
+				return ('00000000' + first.toString(16)).slice(-8) + ('00000000' + second.toString(16)).slice(-8);
+			}
+
+			function textFor(node) {
+				var clone = node.cloneNode(true);
+				Array.prototype.forEach.call(clone.querySelectorAll('script, style, .notice-dismiss, [class*="notice-dismiss"], [class*="dismiss-notice"], [data-dismiss], .screen-reader-text, [hidden], [aria-hidden="true"]'), function (item) {
+					item.remove();
+				});
+				return String(clone.textContent || '').replace(/\s+/g, ' ').trim();
 			}
 
 			function sourceFor(node) {
@@ -348,7 +339,7 @@ final class Premiero_Admin_Notices {
 						if (page) return page;
 					} catch (error) {}
 				}
-				if (node.classList.contains('premiero-demo-admin-notice')) return 'premiero-demo';
+				if (node.id && ['message', 'setting-error-tgmpa'].indexOf(node.id) === -1) return 'id:' + node.id;
 				return 'No identificado';
 			}
 
@@ -361,38 +352,68 @@ final class Premiero_Admin_Notices {
 			}
 
 			function candidates() {
-				var selector = '.premiero-notice-capture > *';
+				var selector = [
+					'.premiero-notice-capture > *',
+					'#wpbody-content > .notice', '#wpbody-content > .updated', '#wpbody-content > .error', '#wpbody-content > [role="alert"]',
+					'#wpbody-content > [class*="admin-notice"]', '#wpbody-content > [class*="notification"]', '#wpbody-content > [class*="promo-banner"]',
+					'#wpbody-content > .wrap > .notice', '#wpbody-content > .wrap > .updated', '#wpbody-content > .wrap > .error', '#wpbody-content > .wrap > [role="alert"]',
+					'#wpbody-content > .wrap > [class*="admin-notice"]', '#wpbody-content > .wrap > [class*="notification"]', '#wpbody-content > .wrap > [class*="promo-banner"]',
+					'#wpbody-content .notice', '#wpbody-content .update-nag', '#wpbody-content [class*="admin-notice"]', '#wpbody-content [class*="promo-banner"]'
+				].join(',');
 				var found = Array.prototype.slice.call(document.querySelectorAll(selector));
 				return found.filter(function (node, index) {
-					if (!node || !node.textContent || node.closest('#premiero-notices-console') || node.classList.contains('premiero-capture-ignore')) return false;
+					if (!node || !node.textContent || node.closest('#premiero-notices-console') || node.classList.contains('premiero-capture-ignore') || node.classList.contains('premiero-notice-capture')) return false;
+					if (node.closest('.components-snackbar-list, .components-notice-list, [class*="snackbar"]')) return false;
 					if (['SCRIPT', 'STYLE', 'LINK'].indexOf(node.tagName) !== -1) return false;
-					if (normalize(node.textContent).length < 8) return false;
+					if (normalize(textFor(node)).length < 8) return false;
 					return found.findIndex(function (candidate) {
-						return candidate !== node && candidate.contains(node) && normalize(candidate.textContent) === normalize(node.textContent);
+						return candidate !== node && candidate.contains(node) && normalize(textFor(candidate)) === normalize(textFor(node));
 					}) === -1 && found.indexOf(node) === index;
 				});
 			}
 
-			var records = [];
-			var recordById = {};
-			candidates().forEach(function (node) {
-				var text = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+			function inspect(node) {
+				var text = textFor(node);
 				var source = sourceFor(node);
-				var declaredId = String(node.getAttribute('data-premiero-notice-id') || '').toLowerCase();
-				var id = /^[a-f0-9]{16}$/.test(declaredId) ? declaredId : fingerprint(source + '|' + text);
+				var id = fingerprint(source + '|' + text);
+				var stableMatch = matchKey(text);
 				node.setAttribute('data-premiero-notice-id', id);
-				if (hidden.has(id)) {
+				node.setAttribute('data-premiero-notice-match', stableMatch);
+				if (hiddenIds.has(id) || hiddenMatches.has(stableMatch)) {
 					node.style.setProperty('display', 'none', 'important');
 					node.setAttribute('aria-hidden', 'true');
+					node.setAttribute('data-premiero-notice-hidden', '1');
+				} else if (node.getAttribute('data-premiero-notice-hidden') === '1') {
+					node.style.removeProperty('display');
+					node.removeAttribute('aria-hidden');
+					node.removeAttribute('data-premiero-notice-hidden');
 				}
-				var record = {fingerprint:id, text:text.slice(0, 1000), source:source, severity:severityFor(node), screen:config.screen};
-				records.push(record);
+				var record = {fingerprint:id, matchKey:stableMatch, text:text.slice(0, 1000), source:source, severity:severityFor(node), screen:config.screen};
 				recordById[id] = record;
-			});
+				return record;
+			}
 
 			function post(body) {
 				if (!window.fetch) return;
-				window.fetch(config.ajaxUrl, {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'}, body:body.toString()}).catch(function () {});
+				window.fetch(config.ajaxUrl, {method:'POST', credentials:'same-origin', keepalive:true, headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'}, body:body.toString()}).catch(function () {});
+			}
+
+			function scanAndCapture() {
+				var fresh = [];
+				candidates().forEach(function (node) {
+					var record = inspect(node);
+					var sentKey = record.matchKey;
+					if (!sentRecords.has(sentKey)) {
+						sentRecords.add(sentKey);
+						fresh.push(record);
+					}
+				});
+				if (!config.canCapture || !fresh.length) return;
+				var captureBody = new URLSearchParams();
+				captureBody.set('action', config.action);
+				captureBody.set('nonce', config.nonce);
+				captureBody.set('notices', JSON.stringify(fresh));
+				post(captureBody);
 			}
 
 			if (config.canCapture) {
@@ -412,12 +433,14 @@ final class Premiero_Admin_Notices {
 				}, true);
 			}
 
-			if (!config.canCapture || !records.length) return;
-			var captureBody = new URLSearchParams();
-			captureBody.set('action', config.action);
-			captureBody.set('nonce', config.nonce);
-			captureBody.set('notices', JSON.stringify(records));
-			post(captureBody);
+			scanAndCapture();
+			var root = document.getElementById('wpbody-content');
+			if (root && window.MutationObserver) {
+				new MutationObserver(function () {
+					window.clearTimeout(scanTimer);
+					scanTimer = window.setTimeout(scanAndCapture, 80);
+				}).observe(root, {childList:true, subtree:true});
+			}
 		}());
 		</script>
 		<?php
@@ -457,7 +480,7 @@ final class Premiero_Admin_Notices {
 			<div class="premiero-notices-guidance">
 				<strong>Control manual y reversible</strong>
 				<p>Oculta promociones, peticiones de reseña o avisos repetitivos. Conserva visibles los errores de seguridad, compatibilidad, actualizaciones fallidas y copias de seguridad.</p>
-				<p>Los dos avisos de prueba se muestran en toda la administración como los de un plugin real. Puedes cerrarlos con su X o seleccionarlos aquí y pulsar <strong>Ocultar seleccionados</strong>; en ambos casos permanecerán ocultos hasta que elijas <strong>Volver a mostrar</strong>.</p>
+				<p>Premiero registra los avisos persistentes cuando cada plugin los muestra. Una vez ocultado un aviso, la regla se aplica también si el mismo mensaje aparece en otra sección o se añade después de cargar la página. Las confirmaciones temporales del editor, como «Guardado» o «Publicado», no se registran.</p>
 			</div>
 
 			<form method="post" class="premiero-notices-form">
@@ -536,24 +559,107 @@ final class Premiero_Admin_Notices {
 		<?php
 	}
 
-	private static function demo_definitions() {
-		return array(
-			self::DEMO_UPDATE_ID => array(
-				'text'     => 'Example Builder: hay una actualización disponible. La versión 4.2.0 ficticia incluye mejoras de rendimiento, compatibilidad y seguridad.',
-				'source'   => 'example-builder-demo',
-				'severity' => 'warning',
-			),
-			self::DEMO_PRO_ID => array(
-				'text'     => 'Descubre Example Builder Pro. Desbloquea plantillas premium, herramientas avanzadas y soporte prioritario con la versión Pro ficticia.',
-				'source'   => 'example-builder-demo',
-				'severity' => 'info',
-			),
-		);
-	}
-
 	private static function get_registry() {
 		$registry = get_option( self::OPT_REGISTRY, array() );
 		return is_array( $registry ) ? $registry : array();
+	}
+
+	private static function find_record_key( $registry, $fingerprint, $match_key ) {
+		if ( isset( $registry[ $fingerprint ] ) ) {
+			return $fingerprint;
+		}
+		if ( 1 === preg_match( '/^[a-f0-9]{16}$/', (string) $match_key ) ) {
+			foreach ( $registry as $record_key => $record ) {
+				if ( ! is_array( $record ) ) {
+					continue;
+				}
+				$record_match = ! empty( $record['match_key'] ) ? sanitize_key( $record['match_key'] ) : self::match_key( isset( $record['text'] ) ? $record['text'] : '' );
+				if ( hash_equals( $record_match, $match_key ) ) {
+					return $record_key;
+				}
+			}
+		}
+		return $fingerprint;
+	}
+
+	private static function match_key( $text ) {
+		$text = function_exists( 'remove_accents' ) ? remove_accents( wp_strip_all_tags( (string) $text ) ) : wp_strip_all_tags( (string) $text );
+		$text = strtolower( trim( preg_replace( '/\s+/', ' ', $text ) ) );
+		$text = substr( $text, 0, 220 );
+		$first  = 5381;
+		$second = 0;
+		$length = strlen( $text );
+		for ( $index = 0; $index < $length; ++$index ) {
+			$code   = ord( $text[ $index ] );
+			$first  = ( ( ( $first * 33 ) & 0xffffffff ) ^ $code ) & 0xffffffff;
+			$second = ( $code + ( ( $second * 65599 ) & 0xffffffff ) ) & 0xffffffff;
+		}
+		return sprintf( '%08x%08x', $first, $second );
+	}
+
+	private static function consolidate_registry( $registry, $remove_demos = false ) {
+		$consolidated = array();
+		foreach ( (array) $registry as $fingerprint => $notice ) {
+			if ( ! is_array( $notice ) || ( $remove_demos && self::is_demo_record( $fingerprint, $notice ) ) ) {
+				continue;
+			}
+			$text = trim( sanitize_textarea_field( isset( $notice['text'] ) ? $notice['text'] : '' ) );
+			if ( '' === $text ) {
+				continue;
+			}
+			$fingerprint = sanitize_key( isset( $notice['fingerprint'] ) ? $notice['fingerprint'] : $fingerprint );
+			$match_key   = ! empty( $notice['match_key'] ) ? sanitize_key( $notice['match_key'] ) : self::match_key( $text );
+			if ( 1 !== preg_match( '/^[a-f0-9]{16}$/', $match_key ) ) {
+				$match_key = self::match_key( $text );
+			}
+			if ( 1 !== preg_match( '/^[a-f0-9]{16}$/', $fingerprint ) ) {
+				$fingerprint = $match_key;
+			}
+			$record_key = self::find_record_key( $consolidated, $fingerprint, $match_key );
+			$severity   = isset( $notice['severity'] ) ? sanitize_key( $notice['severity'] ) : 'custom';
+			if ( ! in_array( $severity, array( 'error', 'warning', 'success', 'info', 'custom' ), true ) ) {
+				$severity = 'custom';
+			}
+			$record = array(
+				'fingerprint' => $record_key,
+				'match_key'   => $match_key,
+				'text'        => substr( $text, 0, 1000 ),
+				'source'      => substr( sanitize_text_field( isset( $notice['source'] ) ? $notice['source'] : 'No identificado' ), 0, 100 ),
+				'severity'    => $severity,
+				'screen'      => substr( sanitize_key( isset( $notice['screen'] ) ? $notice['screen'] : '' ), 0, 100 ),
+				'first_seen'  => isset( $notice['first_seen'] ) ? (int) $notice['first_seen'] : time(),
+				'last_seen'   => isset( $notice['last_seen'] ) ? (int) $notice['last_seen'] : time(),
+				'appearances' => max( 1, isset( $notice['appearances'] ) ? (int) $notice['appearances'] : 1 ),
+				'hidden'      => ! empty( $notice['hidden'] ),
+			);
+			if ( ! isset( $consolidated[ $record_key ] ) ) {
+				$consolidated[ $record_key ] = $record;
+				continue;
+			}
+
+			$existing = $consolidated[ $record_key ];
+			$existing['first_seen']  = min( (int) $existing['first_seen'], (int) $record['first_seen'] );
+			$existing['appearances'] = (int) $existing['appearances'] + (int) $record['appearances'];
+			$existing['hidden']      = ! empty( $existing['hidden'] ) || ! empty( $record['hidden'] );
+			if ( 'No identificado' === $existing['source'] && 'No identificado' !== $record['source'] ) {
+				$existing['source'] = $record['source'];
+			}
+			if ( (int) $record['last_seen'] >= (int) $existing['last_seen'] ) {
+				$existing['text']       = $record['text'];
+				$existing['severity']   = $record['severity'];
+				$existing['screen']     = $record['screen'];
+				$existing['last_seen']  = $record['last_seen'];
+			}
+			$consolidated[ $record_key ] = $existing;
+		}
+		return $consolidated;
+	}
+
+	private static function is_demo_record( $fingerprint, $notice ) {
+		$demo_ids = array( 'd3a0000000000001', 'd3a0000000000002', '3319c5f2a7da4340', '8f2b3dfa244e1324' );
+		$source   = isset( $notice['source'] ) ? sanitize_key( $notice['source'] ) : '';
+		return in_array( (string) $fingerprint, $demo_ids, true )
+			|| in_array( $source, array( 'premiero-demo', 'example-builder-demo' ), true );
 	}
 
 	private static function limit_registry( $registry ) {
