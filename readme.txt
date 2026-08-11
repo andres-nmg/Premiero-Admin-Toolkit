@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.4.0
+Stable tag: 3.4.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,7 +17,9 @@ La pestaña Identidad permite adaptar el nombre y el logo del plugin para cada c
 
 La pestaña Monitorización permite emparejar una instalación con Premiero Maintenance Console. La comunicación siempre parte desde WordPress, está firmada y solo envía un resumen técnico; no admite acciones remotas ni transmite credenciales.
 
-La pestaña Backups remotos detecta las copias terminadas de UpdraftPlus y las sincroniza por SFTP con cualquier servidor compatible. Las transferencias se verifican por tamaño, se reanudan cuando quedan incompletas y se reintentan automáticamente. Opcionalmente, la retención remota replica los conjuntos conservados por UpdraftPlus sin modificar UpdraftPlus ni Premiero Maintenance Console.
+La pestaña Copias de Seguridad detecta las copias terminadas de UpdraftPlus y las sincroniza por SFTP con cualquier servidor compatible. Las transferencias se verifican por tamaño, se reanudan cuando quedan incompletas y se reintentan automáticamente. Opcionalmente, la retención remota replica los conjuntos conservados por UpdraftPlus sin modificar UpdraftPlus ni Premiero Maintenance Console.
+
+La pestaña Avisos registra los mensajes mostrados por WordPress y otros plugins en la administración. El administrador puede ocultar avisos concretos, restaurarlos posteriormente y consultar su origen, tipo y frecuencia sin aplicar bloqueos automáticos.
 
 Las actualizaciones estables se distribuyen mediante GitHub Releases desde:
 
@@ -52,7 +54,17 @@ Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos
 
 == Changelog ==
 
-= 3.4.0 =
+= 3.4.2 =
+
+* Añadida la pestaña Avisos para registrar los mensajes mostrados en la administración de WordPress.
+* Incorporado control manual para ocultar, restaurar o eliminar avisos del registro.
+* Los avisos conservan origen, tipo, pantalla, frecuencia y fechas de aparición.
+* Incluidos búsqueda, filtros, acciones en bloque y una interfaz responsive coherente con el Toolkit.
+* Ningún aviso se oculta automáticamente, evitando silenciar errores importantes sin autorización.
+* La X nativa de WordPress guarda la ocultación de forma persistente y reversible.
+* Añadidos dos avisos de prueba persistentes para comprobar el flujo real de registro y ocultación.
+
+= 3.4.1 =
 
 * Añadida sincronización automática por SFTP de los backups terminados de UpdraftPlus con cualquier servidor compatible.
 * Incorporados detector de backups, cola persistente, cliente SFTP, worker y verificador independientes.

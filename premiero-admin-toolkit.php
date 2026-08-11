@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.4.1
+ * Version:     3.4.2
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.4.0');
+define('PREMIERO_ATK_VER', '3.4.2');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_URL', plugin_dir_url(__FILE__));
@@ -73,6 +73,9 @@ require_once PREMIERO_ATK_DIR . 'includes/class-premiero-console-client.php';
 Premiero_Console_Client::init();
 register_activation_hook( __FILE__, [ 'Premiero_Console_Client', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'Premiero_Console_Client', 'deactivate' ] );
+
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-admin-notices.php';
+Premiero_Admin_Notices::init();
 
 $premiero_composer_autoload = PREMIERO_ATK_DIR . 'vendor/autoload.php';
 if ( file_exists( $premiero_composer_autoload ) ) {
@@ -1385,6 +1388,7 @@ function premiero_admin_header($active_tab = 'info') {
         'branding'   => ['Identidad', 'Adapta el nombre y el logo del plugin para un cliente.'],
         'monitoring' => ['Monitorización', 'Conecta esta instalación con la consola privada de mantenimiento.'],
         'remote-backups' => ['Copias de Seguridad', 'Sincroniza automáticamente las copias terminadas de UpdraftPlus por SFTP.'],
+        'notices'    => ['Avisos', 'Registra y controla los avisos mostrados en la administración de WordPress.'],
     ];
     $section = $sections[$active_tab] ?? $sections['info'];
     ?>
@@ -1409,15 +1413,16 @@ function premiero_admin_header($active_tab = 'info') {
 function premiero_tabs_nav($active) {
     $tabs = [
         'info'       => 'Acerca de',
-        'code'       => 'Código',
         'menuwp'     => 'Menú',
+        'notices'    => 'Avisos',
+        'code'       => 'Código',
+        'remote-backups' => 'Copias de Seguridad',
         'repository' => 'Repositorio',
         'adminui'    => 'Login',
         'branding'   => 'Identidad',
         'monitoring' => 'Monitorización',
-        'remote-backups' => 'Copias de Seguridad',
     ];
-    echo '<h2 class="nav-tab-wrapper">';
+    echo '<h2 class="nav-tab-wrapper" id="premiero-tabs-nav">';
     foreach ($tabs as $slug => $label) {
         $class = $active === $slug ? ' nav-tab nav-tab-active' : ' nav-tab';
         $url   = admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab='.$slug);
@@ -1425,6 +1430,7 @@ function premiero_tabs_nav($active) {
         echo '<a class="'.esc_attr($class).'" href="'.esc_url($url).'"'.$current.'>'.$label.'</a>';
     }
     echo '</h2>';
+    echo '<script>(function(){function revealActiveTab(){var nav=document.getElementById("premiero-tabs-nav");var active=nav&&nav.querySelector(".nav-tab-active");if(!nav||!active||nav.scrollWidth<=nav.clientWidth){return;}nav.scrollLeft=Math.max(0,active.offsetLeft-(nav.clientWidth-active.offsetWidth)/2);}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",revealActiveTab);}else{revealActiveTab();}}());</script>';
 }
 
 /* ====================== Estilos mínimos ====================== */
@@ -1449,8 +1455,10 @@ add_action('admin_enqueue_scripts', function($hook){
     .premiero-head{box-sizing:border-box;width:100%;}
     .premiero-head-copy{min-width:0}
     .premiero-head-copy p{margin:4px 0 0;color:#646970}
-    .nav-tab-wrapper{display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 0 0!important;}
-    .nav-tab-wrapper .nav-tab{float:none;margin:0;}
+    .nav-tab-wrapper{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;overflow-y:hidden;padding:0 20px 0 0!important;scroll-behavior:smooth;scrollbar-color:#c3c4c7 transparent;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+    .nav-tab-wrapper .nav-tab{float:none;flex:0 0 auto;margin:0;white-space:nowrap}
+    .nav-tab-wrapper::-webkit-scrollbar{height:4px}
+    .nav-tab-wrapper::-webkit-scrollbar-thumb{border-radius:999px;background:#c3c4c7}
     .nav-tab-wrapper .nav-tab:focus-visible{outline:2px solid #2271b1;outline-offset:2px;box-shadow:none}
     .premiero-card{box-sizing:border-box;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:24px;margin:12px 20px 0 0;width:auto;max-width:none;}
     .premiero-card .premiero-card{margin-right:0;}
@@ -1512,6 +1520,44 @@ add_action('admin_enqueue_scripts', function($hook){
     .premiero-remote-fingerprint code{overflow-wrap:anywhere;color:#50575e}
     .premiero-remote-fingerprint form{margin:0}
     .premiero-remote-settings-body section{max-width:920px!important}
+    .premiero-notices-console{max-width:1180px;padding-right:20px;color:#1d2327}
+    .premiero-notices-console>h2{margin:12px 0 4px;font-size:20px}
+    .premiero-notices-lead{margin:0 0 18px;color:#646970}
+    .premiero-notices-overview{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+    .premiero-notices-overview>div{position:relative;padding:14px 15px;border:1px solid #dcdcde;border-radius:7px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+    .premiero-notices-overview>div:before{position:absolute;top:0;bottom:0;left:0;width:3px;border-radius:7px 0 0 7px;background:#2271b1;content:""}
+    .premiero-notices-overview>div.is-hidden:before{background:#646970}
+    .premiero-notices-overview>div.is-attention:before{background:#dba617}
+    .premiero-notices-overview strong,.premiero-notices-overview span{display:block}
+    .premiero-notices-overview strong{margin-bottom:5px;font-size:12px}
+    .premiero-notices-overview span{color:#646970;font-size:12px}
+    .premiero-notices-guidance{margin:16px 0;padding:14px 16px;border:1px solid #c3d4e8;border-left:4px solid #2271b1;border-radius:7px;background:#f7fbff}
+    .premiero-notices-guidance p{margin:5px 0 0;color:#50575e;line-height:1.5}
+    .premiero-notices-form{padding:18px;border:1px solid #dcdcde;border-radius:8px;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.04)}
+    .premiero-notices-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .premiero-notices-toolbar input[type=search]{box-sizing:border-box;flex:0 1 320px;width:320px;min-width:220px;max-width:100%}
+    .premiero-notices-toolbar select{box-sizing:border-box;flex:0 1 190px;width:190px;min-width:160px;max-width:100%}
+    .premiero-notices-toolbar .button{flex:0 0 auto}
+    .premiero-notices-table-wrap{width:100%;overflow-x:auto;border:1px solid #dcdcde;border-radius:5px}
+    .premiero-notices-table{min-width:940px;border:0!important;margin:0!important}
+    .premiero-notices-table th,.premiero-notices-table td{padding:10px 12px;vertical-align:top}
+    .premiero-notices-table thead th{white-space:nowrap;background:#f6f7f7;color:#50575e;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+    .premiero-notices-table td:nth-child(2){min-width:320px;max-width:480px}
+    .premiero-notices-table td strong,.premiero-notices-table td span,.premiero-notices-table td small{display:block}
+    .premiero-notice-message{margin-top:7px}
+    .premiero-notice-message summary{width:max-content;max-width:100%;cursor:pointer;color:#2271b1;font-size:12px;font-weight:600}
+    .premiero-notice-message span{margin-top:7px;padding:8px 10px;border-left:3px solid #c3c4c7;background:#f6f7f7;color:#50575e;font-size:12px;line-height:1.5}
+    .premiero-notices-table td code{overflow-wrap:anywhere}
+    .premiero-notices-table td small{margin-top:4px;color:#8c8f94}
+    .premiero-notice-type,.premiero-notice-state{display:inline-block!important;width:max-content;padding:4px 8px;border-radius:999px;background:#f0f0f1;color:#50575e;font-size:11px;font-weight:600}
+    .premiero-notice-type.is-error{background:#fcf0f1;color:#8a2424}
+    .premiero-notice-type.is-warning{background:#fcf9e8;color:#6e4f00}
+    .premiero-notice-type.is-success,.premiero-notice-state.is-visible{background:#edfaef;color:#116329}
+    .premiero-notice-type.is-info{background:#f0f6fc;color:#135e96}
+    .premiero-notice-state.is-hidden{background:#f0f0f1;color:#50575e}
+    .premiero-notices-footer-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+    .premiero-notices-empty{display:flex;flex-direction:column;gap:5px;padding:28px;border:1px dashed #c3c4c7;border-radius:6px;text-align:center;background:#f6f7f7}
+    .premiero-notices-empty span{color:#646970}
     .premiero-info-layout{display:grid;grid-template-columns:minmax(340px,1.05fr) minmax(420px,.95fr);gap:28px;align-items:start}
     .premiero-info-brand,.premiero-info-panel{box-sizing:border-box;border:1px solid #dcdcde;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05)}
     .premiero-info-brand{padding:36px;border-top:5px solid #6b1c00}
@@ -1577,6 +1623,19 @@ add_action('admin_enqueue_scripts', function($hook){
     .premiero-branding-status.is-active{background:#edfaef;color:#116329}
     @media (max-width:1100px){
         .premiero-info-layout{grid-template-columns:1fr}
+        .premiero-notices-console{max-width:none}
+        .premiero-notices-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+        .premiero-notices-form{padding:16px}
+        .premiero-notices-table-wrap{overflow:visible;border:0;background:transparent}
+        .premiero-notices-table{min-width:0;border:0!important;background:transparent;box-shadow:none}
+        .premiero-notices-table thead{display:none}
+        .premiero-notices-table tbody{display:grid;gap:12px;width:100%}
+        .premiero-notices-table tr{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 20px;box-sizing:border-box;width:100%;padding:16px 16px 16px 50px;border:1px solid #dcdcde;border-radius:7px;background:#fff!important;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+        .premiero-notices-table th,.premiero-notices-table td{display:block;box-sizing:border-box;width:100%}
+        .premiero-notices-table th.check-column{position:absolute;top:17px;left:16px;width:24px;padding:0}
+        .premiero-notices-table td{padding:6px 0;border:0;overflow-wrap:anywhere}
+        .premiero-notices-table td:nth-child(2),.premiero-notices-table td[data-label="Aviso"]{grid-column:1/-1;min-width:0;max-width:none;padding-top:0;padding-bottom:12px;border-bottom:1px solid #f0f0f1}
+        .premiero-notices-table td:before{display:block;margin-bottom:3px;color:#8c8f94;content:attr(data-label);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
     }
     @media (max-width:782px){
         .premiero-head{align-items:flex-start!important;gap:16px;padding-right:12px!important}
@@ -1609,6 +1668,18 @@ add_action('admin_enqueue_scripts', function($hook){
         .premiero-remote-settings-actions .description{margin:2px 0 0}
         .premiero-remote-fingerprint{grid-template-columns:1fr;gap:8px}
         .premiero-remote-fingerprint .button{width:100%;text-align:center}
+        .premiero-notices-console{padding-right:10px}
+        .premiero-notices-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+        .premiero-notices-form{padding:14px}
+        .premiero-notices-toolbar{align-items:stretch;flex-direction:column}
+        .premiero-notices-toolbar input[type=search],.premiero-notices-toolbar select,.premiero-notices-toolbar .button{box-sizing:border-box;flex:0 0 auto;width:100%;min-width:0;max-width:none}
+        .premiero-notices-toolbar input[type=search],.premiero-notices-toolbar select{text-align:left}
+        .premiero-notices-toolbar .button{text-align:center}
+        .premiero-notices-table tr{grid-template-columns:1fr;gap:10px;padding:14px 12px 14px 44px}
+        .premiero-notices-table th.check-column{top:15px;left:12px}
+        .premiero-notices-table td{grid-column:1/-1}
+        .premiero-notices-footer-actions{align-items:stretch;flex-direction:column}
+        .premiero-notices-footer-actions .button{width:100%;text-align:center}
         .premiero-info-layout{grid-template-columns:1fr}
         .premiero-info-brand{padding:26px}
         .premiero-info-tools{grid-template-columns:1fr}
@@ -1630,6 +1701,15 @@ add_action('admin_enqueue_scripts', function($hook){
         .premiero-menu-table td{display:grid;grid-template-columns:minmax(110px,35%) minmax(0,1fr);gap:10px;align-items:center;padding:8px;border:0}
         .premiero-menu-table td:before{content:attr(data-label);font-weight:600;color:#50575e}
         .premiero-menu-table code{overflow-wrap:anywhere}
+    }
+    @media (max-width:480px){
+        .premiero-notices-console{padding-right:8px}
+        .premiero-notices-overview{grid-template-columns:1fr}
+        .premiero-notices-guidance{padding:12px}
+        .premiero-notices-form{padding:10px}
+        .premiero-notices-table tr{padding:13px 10px 13px 40px}
+        .premiero-notices-table th.check-column{top:14px;left:10px}
+        .premiero-notice-message span{padding:7px 8px}
     }
     </style>';
     if ( in_array( $tab, [ 'adminui', 'branding' ], true ) ) {
@@ -1773,6 +1853,9 @@ function premiero_render_settings_page() {
                             </a>
                             <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=remote-backups')); ?>">
                                 <strong>Copias de Seguridad</strong><span>Sincronización SFTP con cualquier servidor compatible.</span>
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page='.PREMIERO_ATK_SLUG.'&tab=notices')); ?>">
+                                <strong>Avisos</strong><span>Registro y control de avisos del administrador.</span>
                             </a>
                         </div>
                     </section>
@@ -2169,6 +2252,10 @@ function premiero_render_settings_page() {
 
         case 'remote-backups':
             Premiero_Remote_Backup_Settings::render_tab();
+        break;
+
+        case 'notices':
+            Premiero_Admin_Notices::render_tab();
         break;
 
         /* ====================== PESTAÑA ADMIN UI ====================== */

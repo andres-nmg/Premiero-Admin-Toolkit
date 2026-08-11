@@ -13,6 +13,7 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 - Identidad personalizada por cliente, con nombre y logo propios.
 - Monitorización saliente y de solo lectura mediante la consola privada.
 - Sincronización automática por SFTP de los backups de UpdraftPlus con cualquier servidor compatible.
+- Registro y ocultación reversible de avisos del administrador de WordPress.
 - Actualizaciones desde las Releases de este repositorio.
 
 ## Requisitos
@@ -30,10 +31,10 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 
 Las versiones posteriores aparecerán en el sistema de actualizaciones de WordPress.
 
-## Backups remotos por SFTP
+## Copias de Seguridad por SFTP
 
 1. Mantén en UpdraftPlus la generación, la programación y la restauración, y selecciona **Ninguno** como almacenamiento remoto.
-2. En `Premiero > Backups remotos`, introduce los datos del servidor SFTP de destino.
+2. En `Premiero > Copias de Seguridad`, introduce los datos del servidor SFTP de destino.
 3. Pulsa **Probar conexión** una vez para comprobar escritura, tamaño y clave SSH.
 4. Activa la sincronización y guarda la configuración.
 
@@ -57,7 +58,7 @@ Si un sitio tiene instalado TecnoDerecho Admin Toolkit:
 1. Actualiza `Version` y `PREMIERO_ATK_VER` en `premiero-admin-toolkit.php`.
 2. Actualiza `Stable tag` y el registro de cambios de `readme.txt`.
 3. Confirma y sube los cambios a la rama `main`.
-4. Crea una etiqueta y una Release con el mismo número, por ejemplo `v3.4.0`.
+4. Crea una etiqueta y una Release con el mismo número, por ejemplo `v3.4.2`.
 5. Al publicar la Release, GitHub Actions generará y adjuntará automáticamente `premiero-admin-toolkit.zip`.
 
 Después de publicar, espera a que el workflow `Build WordPress plugin release` termine correctamente antes de anunciar o instalar la versión.

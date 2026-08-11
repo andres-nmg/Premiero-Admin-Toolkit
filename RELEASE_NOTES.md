@@ -1,32 +1,29 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.4.0`
-- **Etiqueta:** `v3.4.0`
-- **Título de la Release:** `Premiero Admin Toolkit 3.4.0`
+- **Versión:** `3.4.2`
+- **Etiqueta:** `v3.4.2`
+- **Título de la Release:** `Premiero Admin Toolkit 3.4.2`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.4.0
+## Premiero Admin Toolkit 3.4.2
 
-Esta versión sustituye la subida remota de UpdraftPlus por una sincronización SFTP propia hacia cualquier servidor compatible. UpdraftPlus continúa generando, programando y restaurando las copias, mientras Premiero se ocupa exclusivamente de su transporte remoto.
+Esta versión incorpora un gestor de avisos para recuperar el control del panel de WordPress. Premiero registra los avisos que muestran WordPress y otros plugins y permite ocultar individualmente promociones, mensajes repetitivos o recordatorios que no aporten valor.
 
 ### Cambios principales
 
-- Nueva pestaña **Backups remotos** con activación, credenciales, estado y actividad de la cola.
-- Detección automática de conjuntos terminados de UpdraftPlus.
-- Cola persistente por archivo con deduplicación y reintentos progresivos.
-- Transferencias SFTP reanudables mediante phpseclib 3.
-- Publicación mediante archivos temporales `.part` y verificación del tamaño remoto.
-- Reconciliación periódica de las copias locales y remotas.
-- Actividad agrupada por copias completas, con progreso por archivos y un historial de retención separado.
-- Recuperación de estados de subida interrumpidos cuando el archivo definitivo ya está verificado en el servidor SFTP.
-- Reconciliación inmediata al terminar el último archivo para que la retención no quede esperando al siguiente escaneo periódico.
-- Recuperación automática de archivos que falten en el servidor SFTP mientras sigan conservados por UpdraftPlus.
-- Retención remota opcional que elimina únicamente conjuntos previamente gestionados por Premiero y retirados del historial de UpdraftPlus.
-- Acciones **Probar conexión** y **Sincronizar ahora**, con actividad agrupada para el uso diario.
-- Cifrado local de la contraseña mediante las salts de WordPress.
-- Registro y comprobación de la clave pública SSH del servidor.
-- Premiero Maintenance Console y el estado original de UpdraftPlus permanecen sin cambios.
+- Nueva pestaña **Avisos** integrada en Premiero Admin Toolkit.
+- Registro automático de los avisos mostrados en las pantallas de administración.
+- Identificación del origen, tipo, pantalla, primera y última aparición.
+- Contador de frecuencia para detectar avisos repetitivos.
+- Acciones para ocultar, volver a mostrar o eliminar avisos del registro.
+- Búsqueda, filtros y acciones en bloque.
+- Ocultación reversible aplicada solo a los avisos seleccionados por el administrador.
+- La X nativa de los avisos también guarda la ocultación de forma persistente.
+- Ningún aviso se bloquea automáticamente.
+- Dos avisos de prueba persistentes, uno de actualización y otro de versión Pro, mostrados en la administración como los de un plugin real.
+- Interfaz responsive coherente con el resto de pestañas del Toolkit.
+- Sin cambios en Premiero Control, copias SFTP ni el resto de funciones existentes.
 
 ### Requisitos
 
