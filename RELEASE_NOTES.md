@@ -1,28 +1,29 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.4.2`
-- **Etiqueta:** `v3.4.2`
-- **Título de la Release:** `Premiero Admin Toolkit 3.4.2`
+- **Versión:** `3.4.3`
+- **Etiqueta:** `v3.4.3`
+- **Título de la Release:** `Premiero Admin Toolkit 3.4.3`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.4.2
+## Premiero Admin Toolkit 3.4.3
 
-Esta versión incorpora un gestor de avisos para recuperar el control del panel de WordPress. Premiero registra los avisos que muestran WordPress y otros plugins y permite ocultar individualmente promociones, mensajes repetitivos o recordatorios que no aporten valor.
+Esta versión es un parche de estabilidad para el gestor de avisos incorporado en 3.4.2. Corrige la detección y la ocultación entre distintas pantallas del administrador y elimina por completo los avisos utilizados durante las pruebas.
 
 ### Cambios principales
 
-- Nueva pestaña **Avisos** integrada en Premiero Admin Toolkit.
-- Registro automático de los avisos mostrados en las pantallas de administración.
-- Identificación del origen, tipo, pantalla, primera y última aparición.
-- Contador de frecuencia para detectar avisos repetitivos.
-- Acciones para ocultar, volver a mostrar o eliminar avisos del registro.
-- Búsqueda, filtros y acciones en bloque.
-- Ocultación reversible aplicada solo a los avisos seleccionados por el administrador.
-- La X nativa de los avisos también guarda la ocultación de forma persistente.
-- Ningún aviso se bloquea automáticamente.
-- Dos avisos de prueba persistentes, uno de actualización y otro de versión Pro, mostrados en la administración como los de un plugin real.
-- Interfaz responsive coherente con el resto de pestañas del Toolkit.
+- Eliminados todos los avisos de demostración; no se mostrarán en instalaciones nuevas ni actualizadas.
+- Limpieza automática de las demostraciones que hubieran quedado registradas con la versión 3.4.2.
+- Nueva firma estable para reconocer el mismo aviso en Escritorio, Plugins y otras secciones.
+- Unificación automática de registros duplicados conservando el estado oculto y el historial.
+- La ocultación se aplica en cualquier pantalla donde vuelva a aparecer el mismo mensaje.
+- Detección de avisos añadidos dinámicamente por JavaScript después de cargar la página.
+- Captura ampliada en administración normal, administración de red, administración de usuario y paneles dinámicos de plugins.
+- Detección de avisos nativos, banners personalizados y promociones aunque aparezcan dentro del contenido de una pantalla.
+- Exclusión de los mensajes operativos temporales del editor de bloques, como guardado, publicación o confirmaciones tipo *snackbar*.
+- Persistencia reforzada al usar la X nativa, incluso si se cambia de pantalla inmediatamente después.
+- Los paneles dinámicos que reutilizan un mismo contenedor recalculan la identidad del mensaje y no arrastran ocultaciones anteriores.
+- Corregido el tamaño del buscador y rediseñadas las fichas responsive en tablet y móvil.
 - Sin cambios en Premiero Control, copias SFTP ni el resto de funciones existentes.
 
 ### Requisitos
