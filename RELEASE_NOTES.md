@@ -1,30 +1,54 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.4.3`
-- **Etiqueta:** `v3.4.3`
-- **Título de la Release:** `Premiero Admin Toolkit 3.4.3`
+- **Versión:** `3.5.13`
+- **Etiqueta:** `v3.5.13`
+- **Título de la Release:** `Premiero Admin Toolkit 3.5.13`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.4.3
+## Premiero Admin Toolkit 3.5.13
 
-Esta versión es un parche de estabilidad para el gestor de avisos incorporado en 3.4.2. Corrige la detección y la ocultación entre distintas pantallas del administrador y elimina por completo los avisos utilizados durante las pruebas.
+Esta versión completa la adaptación oscura de las pantallas nativas de WordPress y de los componentes visuales compartidos por los plugins Premiero.
+
+Incluye además la corrección específica del panel lateral de metadatos en el detalle individual de medios.
+
+La pestaña Apariencia incorpora ahora el ajuste rápido «Usar colores Premiero», inspirado en la identidad crema, granate, verde y gris cálido de premiero.es. La paleta funciona como punto de partida y todos sus valores continúan siendo editables.
+
+La paleta se ha refinado para reproducir mejor la jerarquía real de la web: granate como color protagonista y verde reservado a estados residuales de éxito o destacado.
+
+Esta revisión elimina los estados azules heredados, convierte las pestañas y los bordes de botones al lenguaje granate de la marca y presenta los ajustes nativos en cajas blancas sobre el lienzo crema.
+
+Los botones secundarios del preset Premiero quedan ahora sin relleno: muestran el blanco o el crema de la superficie sobre la que se encuentran, conservan el borde granate y comparten el redondeado de la web. Los botones principales mantienen el relleno granate.
+
+Las pestañas reproducen ahora el patrón de navegación de premiero.es: una barra blanca continua, sin recuadros individuales, con hover blanco y una línea inferior granate para señalar la sección activa. También se elimina el último foco azul heredado de WordPress.
+
+La navegación queda unida físicamente al panel inferior para formar una sola superficie. Las pantallas de plugins, perfil y usuarios abandonan los fondos azules y la presentación plana, y el selector nativo de esquemas de WordPress se oculta mientras el Toolkit gobierna la apariencia.
+
+La navegación del Toolkit adopta el comportamiento exacto de las pestañas de premiero.es: las opciones inactivas descansan sobre crema, pasan a blanco en hover y conservan la línea inferior granate; la activa se abre visualmente hacia el panel blanco inferior, sin línea ni separación.
+
+La revisión final adopta el patrón más ligero de Premiero Control Financiero para todas las paletas: navegación directamente sobre el lienzo, una línea inferior continua y un único subrayado de énfasis para hover y sección activa.
+
+Este patrón queda incorporado al propio Premiero Admin Toolkit y se mantiene aunque la personalización visual esté desactivada.
+
+La pestaña Apariencia cierra la revisión visual con selectores coherentes en todos los modos, muestras de color sin bordes duplicados y una composición adaptable específica para tablet y móvil.
 
 ### Cambios principales
 
-- Eliminados todos los avisos de demostración; no se mostrarán en instalaciones nuevas ni actualizadas.
-- Limpieza automática de las demostraciones que hubieran quedado registradas con la versión 3.4.2.
-- Nueva firma estable para reconocer el mismo aviso en Escritorio, Plugins y otras secciones.
-- Unificación automática de registros duplicados conservando el estado oculto y el historial.
-- La ocultación se aplica en cualquier pantalla donde vuelva a aparecer el mismo mensaje.
-- Detección de avisos añadidos dinámicamente por JavaScript después de cargar la página.
-- Captura ampliada en administración normal, administración de red, administración de usuario y paneles dinámicos de plugins.
-- Detección de avisos nativos, banners personalizados y promociones aunque aparezcan dentro del contenido de una pantalla.
-- Exclusión de los mensajes operativos temporales del editor de bloques, como guardado, publicación o confirmaciones tipo *snackbar*.
-- Persistencia reforzada al usar la X nativa, incluso si se cambia de pantalla inmediatamente después.
-- Los paneles dinámicos que reutilizan un mismo contenedor recalculan la identidad del mensaje y no arrastran ocultaciones anteriores.
-- Corregido el tamaño del buscador y rediseñadas las fichas responsive en tablet y móvil.
-- Sin cambios en Premiero Control, copias SFTP ni el resto de funciones existentes.
+- Nueva pestaña Apariencia situada junto a Identidad y construida con los mismos patrones visuales del Toolkit.
+- Personalización del menú lateral, barra superior, elementos activos, color de énfasis, fondo general, paneles, texto y botones.
+- Colores independientes para el fondo y el texto de botones principales y secundarios, reflejados en la vista previa.
+- Modos claro personalizado y oscuro con paletas recomendadas que pueden ajustarse color por color.
+- Colores y tipografías independientes para títulos, texto principal y texto secundario.
+- Maven Pro e IBM Plex Mono incluidas en el plugin con sus licencias OFL y sin descargar recursos externos durante el uso.
+- Vista previa en tiempo real para comprobar colores y tipografía antes de guardar.
+- Activación reversible y botón para restaurar por completo la apariencia original de WordPress.
+- Validación de colores y opciones antes de guardarlos, con protección mediante permisos y nonce.
+- Estilos limitados a `wp-admin`, sin modificar el frontal, el tema activo ni el núcleo de WordPress.
+- Integración específica del modo oscuro con Premiero Admin Toolkit, LinkedIn CRM, Control Financiero y Maintenance Console.
+- Contraste reforzado en Código, Avisos, Menú, la ficha de leads, tablas financieras, ajustes, disponibilidad y cajas nativas de publicación.
+- Pantallas nativas de Ajustes presentadas como paneles con borde, separación y profundidad visual.
+- Modales de medios, ventanas emergentes y fondos superpuestos adaptados íntegramente al modo oscuro.
+- Columnas calculadas del libro de movimientos, flujo mensual y filtros de Maintenance Console sin superficies claras residuales.
 
 ### Requisitos
 
