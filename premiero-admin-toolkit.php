@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.5.13
+ * Version:     3.6.4
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.5.13');
+define('PREMIERO_ATK_VER', '3.6.4');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_URL', plugin_dir_url(__FILE__));
@@ -76,6 +76,15 @@ require_once PREMIERO_ATK_DIR . 'includes/class-premiero-console-client.php';
 Premiero_Console_Client::init();
 register_activation_hook( __FILE__, [ 'Premiero_Console_Client', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'Premiero_Console_Client', 'deactivate' ] );
+
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-updraft-free-adapter.php';
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-plugin-updater.php';
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-command-runner.php';
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-command-client.php';
+Premiero_Command_Runner::init();
+Premiero_Command_Client::init();
+register_activation_hook( __FILE__, [ 'Premiero_Command_Client', 'activate' ] );
+register_deactivation_hook( __FILE__, [ 'Premiero_Command_Client', 'deactivate' ] );
 
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-admin-notices.php';
 Premiero_Admin_Notices::init();

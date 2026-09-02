@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.5.13
+Stable tag: 3.6.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,7 +17,7 @@ La pestaña Identidad permite adaptar el nombre y el logo del plugin para cada c
 
 La pestaña Apariencia permite personalizar visualmente el administrador de WordPress: menú lateral, barra superior, colores de énfasis, fondos, botones principales y secundarios, colores independientes para títulos y textos, tipografías diferenciadas y un modo oscuro editable. Incluye Maven Pro e IBM Plex Mono como fuentes locales, vista previa y restauración segura de los estilos originales.
 
-La pestaña Monitorización permite emparejar una instalación con Premiero Maintenance Console. La comunicación siempre parte desde WordPress, está firmada y solo envía un resumen técnico; no admite acciones remotas ni transmite credenciales.
+La pestaña Monitorización permite emparejar una instalación con Premiero Maintenance Console. La comunicación siempre parte desde WordPress y está firmada. Además de enviar el resumen técnico, el toolkit consulta una cola cerrada de órdenes para comprobar o crear copias con UpdraftPlus Free, reflejar exclusiones y actualizar plugins mediante la API nativa de WordPress. No admite código, hooks, rutas, URLs ni comandos arbitrarios.
 
 La pestaña Copias de Seguridad detecta las copias terminadas de UpdraftPlus y las sincroniza por SFTP con cualquier servidor compatible. Las transferencias se verifican por tamaño, se reanudan cuando quedan incompletas y se reintentan automáticamente. Opcionalmente, la retención remota replica los conjuntos conservados por UpdraftPlus sin modificar UpdraftPlus ni Premiero Maintenance Console.
 
@@ -55,6 +55,27 @@ Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 
 Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
 
 == Changelog ==
+
+= 3.6.4 =
+
+* Si un comando se ejecuta desde una visita administrativa, el plugin se reactiva de forma controlada cuando estaba activo antes de actualizar.
+* La operación falla de forma explícita si WordPress no puede completar esa reactivación.
+
+= 3.6.3 =
+
+* El polling de comandos pasa a ejecutarse cada minuto y las visitas administrativas consultan también los comandos pendientes.
+* Después de actualizar se refrescan los metadatos nativos de WordPress y se envía inmediatamente una nueva instantánea a la consola.
+
+= 3.6.2 =
+
+* El actualizador remoto carga expresamente la API de archivos de WordPress cuando se ejecuta desde WP-Cron.
+* Corregida la excepción inmediata al iniciar `Plugin_Upgrader` fuera de una petición administrativa.
+
+= 3.6.1 =
+
+* La finalización de una copia iniciada remotamente se reconcilia inmediatamente al devolver el control UpdraftPlus.
+* Las visitas administrativas y «Enviar estado ahora» permiten reanudar una operación si WP-Cron se retrasa.
+* La antigüedad predeterminada admitida para reutilizar una copia correcta pasa a siete días.
 
 = 3.5.13 =
 
