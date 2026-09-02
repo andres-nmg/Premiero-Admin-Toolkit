@@ -1,0 +1,17 @@
+{
+    "name": "premiero/admin-toolkit",
+    "description": "Herramientas de administracion y mantenimiento para WordPress.",
+    "type": "wordpress-plugin",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": ">=7.4",
+        "phpseclib/phpseclib": "^3.0"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "7.4.0"
+        },
+        "sort-packages": true
+    }
+}
