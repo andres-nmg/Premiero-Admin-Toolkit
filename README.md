@@ -11,7 +11,7 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 - Instalación de plugins y temas desde WordPress.org o desde paquetes locales.
 - Personalización de la pantalla de acceso.
 - Identidad personalizada por cliente, con nombre y logo propios.
-- Monitorización saliente y de solo lectura mediante la consola privada.
+- Monitorización saliente y ejecución por polling de un catálogo cerrado de copias, exclusiones y actualizaciones firmado por la consola privada.
 - Sincronización automática por SFTP de los backups de UpdraftPlus con cualquier servidor compatible.
 - Registro y ocultación reversible de avisos del administrador de WordPress.
 - Actualizaciones desde las Releases de este repositorio.
@@ -30,6 +30,12 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 4. Abre `Premiero` en el menú de administración.
 
 Las versiones posteriores aparecerán en el sistema de actualizaciones de WordPress.
+
+## Actualizaciones remotas desde la consola
+
+El toolkit consulta la consola mediante WP-Cron. Las peticiones y respuestas se firman con la credencial HMAC del emparejamiento y usan timestamp y nonces contra repetición. Solo se aceptan cuatro acciones cerradas: actualizar un `plugin_file`, iniciar una copia completa, consultar su estado y reflejar una exclusión.
+
+Antes de cada actualización se exige una copia reciente de UpdraftPlus Free marcada como correcta y sin avisos. Si no existe, el toolkit inicia una copia con el almacenamiento configurado en UpdraftPlus y espera de forma reanudable. Cualquier estado fallido, parcial, desconocido o no confirmado impide actualizar. La actualización se delega en `Plugin_Upgrader::upgrade()` y nunca acepta paquetes ni URLs desde la consola.
 
 ## Copias de Seguridad por SFTP
 

@@ -2,9 +2,9 @@
 /**
  * Cliente saliente para Premiero Maintenance Console.
  *
- * Este archivo no expone endpoints en la instalación cliente y no acepta
- * órdenes remotas. Toda comunicación se inicia desde WordPress mediante
- * WP-Cron o una acción explícita de un administrador.
+ * Este archivo no expone endpoints en la instalación cliente. Toda
+ * comunicación se inicia desde WordPress; las órdenes se recogen por polling
+ * y se limitan al catálogo cerrado del ejecutor de comandos.
  *
  * La instalación se empareja una sola vez mediante /pair. A partir de ese
  * momento envía instantáneas firmadas a /telemetry con el protocolo PMC1.
@@ -26,6 +26,8 @@ final class Premiero_Console_Client {
 	const API_NAMESPACE  = 'premiero-console/v1';
 	const SIGNATURE_VERSION = 'PMC1';
 	const TELEMETRY_CANONICAL = '/wp-json/premiero-console/v1/telemetry';
+	const COMMAND_POLL_CANONICAL = '/wp-json/premiero-console/v1/commands/poll';
+	const COMMAND_REPORT_CANONICAL = '/wp-json/premiero-console/v1/commands/report';
 
 	const CRON_SYNC      = 'premiero_console_sync';
 	const CRON_SYNC_SOON = 'premiero_console_sync_soon';
@@ -52,6 +54,7 @@ final class Premiero_Console_Client {
 	const OPT_SIZE_CACHE      = 'premiero_console_size_cache';
 	const OPT_LOCK            = 'premiero_console_sync_lock';
 	const OPT_SIZE_LOCK       = 'premiero_console_size_lock';
+	const OPT_RESPONSE_NONCES = 'premiero_console_response_nonces';
 
 	/**
 	 * Evita registrar dos veces los hooks si init() se llama más de una vez.
@@ -238,6 +241,9 @@ final class Premiero_Console_Client {
 		}
 
 		if ( 'send' === $action ) {
+			if ( class_exists( 'Premiero_Command_Client' ) ) {
+				Premiero_Command_Client::tick();
+			}
 			$result = self::send_snapshot( true );
 			self::redirect_with_status( is_wp_error( $result ) ? 'send-error' : 'sent' );
 		}
@@ -286,8 +292,9 @@ final class Premiero_Console_Client {
 			<h2>Consola de mantenimiento</h2>
 			<p>
 				Esta conexión envía una instantánea técnica a tu consola privada.
-				No permite iniciar sesión, instalar, actualizar ni ejecutar acciones
-				en este WordPress de forma remota.
+				No permite iniciar sesión ni ejecutar código o comandos arbitrarios.
+				Las copias y actualizaciones solo se aceptan mediante el canal firmado
+				y el catálogo cerrado configurado.
 			</p>
 
 			<table class="widefat striped" style="max-width:920px;margin:18px 0;">
@@ -574,6 +581,9 @@ final class Premiero_Console_Client {
 	 */
 	public static function disconnect() {
 		self::clear_scheduled_events();
+		if ( class_exists( 'Premiero_Command_Client', false ) ) {
+			Premiero_Command_Client::reset_on_disconnect();
+		}
 
 		delete_option( self::OPT_ENABLED );
 		delete_option( self::OPT_API_BASE );
@@ -722,6 +732,129 @@ final class Premiero_Console_Client {
 		} finally {
 			delete_option( self::OPT_LOCK );
 		}
+	}
+
+	/**
+	 * Envía una petición de comandos y verifica la firma de la respuesta.
+	 * Solo admite las dos rutas fijas de este protocolo.
+	 *
+	 * @param string $canonical_path Ruta fija.
+	 * @param array  $payload Cuerpo.
+	 * @return array|WP_Error
+	 */
+	public static function signed_command_request( $canonical_path, $payload ) {
+		$routes = array(
+			self::COMMAND_POLL_CANONICAL   => '/commands/poll',
+			self::COMMAND_REPORT_CANONICAL => '/commands/report',
+		);
+		if ( ! isset( $routes[ $canonical_path ] ) || ! self::has_connection_config() ) {
+			return new WP_Error( 'console_command_route_denied', 'La ruta de comandos no está permitida.' );
+		}
+
+		$secret = self::get_secret();
+		if ( is_wp_error( $secret ) ) {
+			return $secret;
+		}
+		$body = wp_json_encode( is_array( $payload ) ? $payload : array() );
+		if ( false === $body || strlen( $body ) > 64 * KB_IN_BYTES ) {
+			return new WP_Error( 'console_command_json_invalid', 'No se pudo preparar la petición de comandos.' );
+		}
+
+		$installation_id = strtolower( sanitize_text_field( (string) get_option( self::OPT_REMOTE_INSTALLATION_ID, '' ) ) );
+		$key_id          = strtolower( sanitize_text_field( (string) get_option( self::OPT_KEY_ID, '' ) ) );
+		$timestamp       = (string) time();
+		$request_nonce   = self::generate_request_nonce();
+		$canonical       = implode(
+			"\n",
+			array( self::SIGNATURE_VERSION, 'POST', $canonical_path, $installation_id, $key_id, $timestamp, $request_nonce, hash( 'sha256', $body ) )
+		);
+		$headers = array(
+			'Accept'                => 'application/json',
+			'Content-Type'          => 'application/json; charset=utf-8',
+			'User-Agent'            => self::user_agent(),
+			'X-Premiero-Install-ID' => $installation_id,
+			'X-Premiero-Key-ID'     => $key_id,
+			'X-Premiero-Timestamp'  => $timestamp,
+			'X-Premiero-Nonce'      => $request_nonce,
+			'X-Premiero-Signature'  => 'v1=' . self::base64url_encode( hash_hmac( 'sha256', $canonical, $secret, true ) ),
+		);
+
+		$response = self::post_to_console(
+			self::get_api_base() . $routes[ $canonical_path ],
+			array(
+				'timeout'             => 12,
+				'redirection'         => 0,
+				'sslverify'           => true,
+				'limit_response_size' => 64 * KB_IN_BYTES,
+				'headers'             => $headers,
+				'body'                => $body,
+			)
+		);
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+		$status = (int) wp_remote_retrieve_response_code( $response );
+		if ( $status < 200 || $status >= 300 ) {
+			return new WP_Error( 'console_command_http_' . $status, 'La consola rechazó la petición de comandos.' );
+		}
+
+		$response_body  = (string) wp_remote_retrieve_body( $response );
+		$response_time  = trim( (string) wp_remote_retrieve_header( $response, 'x-premiero-timestamp' ) );
+		$response_nonce = trim( (string) wp_remote_retrieve_header( $response, 'x-premiero-nonce' ) );
+		$response_sig   = trim( (string) wp_remote_retrieve_header( $response, 'x-premiero-signature' ) );
+		if (
+			! preg_match( '/^[0-9]{10,11}$/', $response_time )
+			|| abs( time() - (int) $response_time ) > 300
+			|| ! preg_match( '/^[A-Za-z0-9_-]{22,128}$/', $response_nonce )
+			|| ! preg_match( '/^(?:v1=)?[A-Za-z0-9_-]{43}$/', $response_sig )
+		) {
+			return new WP_Error( 'console_response_envelope_invalid', 'La respuesta firmada no es válida.' );
+		}
+		$response_canonical = implode(
+			"\n",
+			array( self::SIGNATURE_VERSION, 'RESPONSE', $canonical_path, $installation_id, $key_id, $response_time, $response_nonce, hash( 'sha256', $response_body ) )
+		);
+		$expected = 'v1=' . self::base64url_encode( hash_hmac( 'sha256', $response_canonical, $secret, true ) );
+		if ( 0 !== strpos( $response_sig, 'v1=' ) ) {
+			$response_sig = 'v1=' . $response_sig;
+		}
+		if ( ! hash_equals( $expected, $response_sig ) || ! self::remember_response_nonce( $response_nonce ) ) {
+			return new WP_Error( 'console_response_auth_failed', 'No se pudo autenticar la respuesta de la consola.' );
+		}
+
+		$data = json_decode( $response_body, true );
+		if ( ! is_array( $data ) || empty( $data['request_nonce'] ) || ! hash_equals( $request_nonce, (string) $data['request_nonce'] ) ) {
+			return new WP_Error( 'console_response_binding_failed', 'La respuesta no corresponde a la petición actual.' );
+		}
+		return $data;
+	}
+
+	/** Guarda nonces de respuesta recientes en una lista acotada. */
+	private static function remember_response_nonce( $nonce ) {
+		$items = get_option( self::OPT_RESPONSE_NONCES, array() );
+		$items = is_array( $items ) ? $items : array();
+		$now   = time();
+		foreach ( $items as $option_name => $expires ) {
+			if ( (int) $expires <= $now ) {
+				delete_option( $option_name );
+				unset( $items[ $option_name ] );
+			}
+		}
+		$option_name = 'premiero_console_response_nonce_' . hash( 'sha256', (string) $nonce );
+		if ( ! add_option( $option_name, $now + 600, '', false ) ) {
+			return false;
+		}
+		$items[ $option_name ] = $now + 600;
+		if ( count( $items ) > 500 ) {
+			asort( $items, SORT_NUMERIC );
+			$remove = array_slice( $items, 0, count( $items ) - 500, true );
+			foreach ( array_keys( $remove ) as $old_option ) {
+				delete_option( $old_option );
+				unset( $items[ $old_option ] );
+			}
+		}
+		self::update_private_option( self::OPT_RESPONSE_NONCES, $items );
+		return true;
 	}
 
 	/**
@@ -1039,9 +1172,11 @@ final class Premiero_Console_Client {
 				$new_version    = self::read_update_field( $update, 'new_version', '' );
 				$plugin_items[] = array(
 					'slug'      => sanitize_key( (string) $update_slug ),
+					'plugin_file' => (string) $plugin_file,
 					'name'      => isset( $plugins[ $plugin_file ]['Name'] ) ? sanitize_text_field( $plugins[ $plugin_file ]['Name'] ) : '',
 					'installed' => sanitize_text_field( $installed_version ),
 					'available' => sanitize_text_field( (string) $new_version ),
+					'active'    => self::is_plugin_active( $plugin_file ),
 				);
 			}
 		}
@@ -1393,9 +1528,11 @@ final class Premiero_Console_Client {
 
 			$normalized[] = array(
 				'slug'              => substr( sanitize_key( (string) $item['slug'] ), 0, 191 ),
+				'plugin_file'       => isset( $item['plugin_file'] ) ? substr( (string) $item['plugin_file'], 0, 191 ) : '',
 				'name'              => substr( sanitize_text_field( isset( $item['name'] ) ? (string) $item['name'] : '' ), 0, 191 ),
 				'current_version'   => substr( sanitize_text_field( isset( $item['installed'] ) ? (string) $item['installed'] : '' ), 0, 32 ),
 				'available_version' => substr( sanitize_text_field( isset( $item['available'] ) ? (string) $item['available'] : '' ), 0, 32 ),
+				'active'            => ! empty( $item['active'] ),
 			);
 		}
 
