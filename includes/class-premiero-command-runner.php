@@ -265,9 +265,15 @@ final class Premiero_Command_Runner {
 		delete_option( self::OPT_ACTIVE );
 		wp_clear_scheduled_hook( self::CRON_RESUME );
 		Premiero_Command_Client::schedule_poll( 5 );
-		$refresh_now = 'success' === $state['status']
-			&& in_array( $state['command']['action'], array( 'update_plugin', 'run_backup' ), true );
-		if ( ! $refresh_now || is_wp_error( Premiero_Console_Client::send_snapshot( true ) ) ) {
+		$action = $state['command']['action'];
+		if ( 'update_plugin' === $action ) {
+			$refresh = Premiero_Console_Client::refresh_updates_and_send_snapshot();
+		} elseif ( 'success' === $state['status'] && 'run_backup' === $action ) {
+			$refresh = Premiero_Console_Client::send_snapshot( true );
+		} else {
+			$refresh = new WP_Error( 'premiero_snapshot_deferred', 'La instantánea se enviará en el siguiente ciclo.' );
+		}
+		if ( is_wp_error( $refresh ) ) {
 			Premiero_Console_Client::mark_dirty();
 		}
 	}

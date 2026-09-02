@@ -734,6 +734,19 @@ final class Premiero_Console_Client {
 		}
 	}
 
+	/** Refresca los transients nativos de actualización antes de informar a la consola. */
+	public static function refresh_updates_and_send_snapshot() {
+		if ( ! function_exists( 'wp_update_plugins' ) ) {
+			require_once ABSPATH . WPINC . '/update.php';
+		}
+
+		wp_version_check( array(), true );
+		wp_update_plugins();
+		wp_update_themes();
+
+		return self::send_snapshot( true );
+	}
+
 	/**
 	 * Envía una petición de comandos y verifica la firma de la respuesta.
 	 * Solo admite las dos rutas fijas de este protocolo.
