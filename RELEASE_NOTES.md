@@ -1,13 +1,13 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.6.4`
-- **Etiqueta:** `v3.6.4`
-- **Título de la Release:** `Premiero Admin Toolkit 3.6.4`
+- **Versión:** `3.6.5`
+- **Etiqueta:** `v3.6.5`
+- **Título de la Release:** `Premiero Admin Toolkit 3.6.5`
 - **Asset generado:** `premiero-admin-toolkit.zip`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.6.4
+## Premiero Admin Toolkit 3.6.5
 
 Esta versión incorpora el canal seguro de operaciones remotas utilizado por
 Premiero Maintenance Console para gestionar copias y actualizaciones de plugins.
@@ -36,6 +36,8 @@ Premiero Maintenance Console para gestionar copias y actualizaciones de plugins.
   administrativas.
 - Envío inmediato de una nueva instantánea después de una copia o actualización
   correcta.
+- Refresco de los datos nativos de actualización antes de enviar el resultado,
+  incluso cuando WordPress ya no ofrece el paquete solicitado.
 - Registro de versión anterior, versión instalada, duración y resultado.
 
 ### Compatibilidad y límites
@@ -50,8 +52,8 @@ Premiero Maintenance Console para gestionar copias y actualizaciones de plugins.
 
 ### Publicación
 
-1. Confirma que `Version`, `PREMIERO_ATK_VER` y `Stable tag` indican `3.6.4`.
-2. Crea y publica la etiqueta `v3.6.4`.
+1. Confirma que `Version`, `PREMIERO_ATK_VER` y `Stable tag` indican `3.6.5`.
+2. Crea y publica la etiqueta `v3.6.5`.
 3. GitHub Actions generará y adjuntará automáticamente el archivo
    `premiero-admin-toolkit.zip`.
 4. No adjuntes el ZIP versionado local con otro nombre: el actualizador del

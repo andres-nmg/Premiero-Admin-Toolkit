@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.6.4
+Stable tag: 3.6.5
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,11 @@ Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 
 Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
 
 == Changelog ==
+
+= 3.6.5 =
+
+* Al finalizar una actualización se refresca el estado nativo de plugins, temas y WordPress antes de informar a la consola.
+* La actualización del estado se intenta también cuando WordPress informa que el paquete ya no está pendiente.
 
 = 3.6.4 =
 
