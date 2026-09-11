@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.6.5
+ * Version:     3.7.0
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.6.5');
+define('PREMIERO_ATK_VER', '3.7.0');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_URL', plugin_dir_url(__FILE__));
@@ -69,6 +69,9 @@ const PREMIERO_OPT_WHITE_LABEL_ENABLED = 'premiero_white_label_enabled';
 const PREMIERO_OPT_WHITE_LABEL_NAME    = 'premiero_white_label_name';
 const PREMIERO_OPT_WHITE_LABEL_LOGO_ID = 'premiero_white_label_logo_id';
 
+/** Diagnóstico avanzado */
+const PREMIERO_OPT_DIAG_ENABLED = 'premiero_diag_enabled';
+
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-admin-appearance.php';
 Premiero_Admin_Appearance::init();
 
@@ -88,6 +91,11 @@ register_deactivation_hook( __FILE__, [ 'Premiero_Command_Client', 'deactivate' 
 
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-admin-notices.php';
 Premiero_Admin_Notices::init();
+
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-diagnostics.php';
+Premiero_Diagnostics::init();
+
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-diagnostics-ui.php';
 
 $premiero_composer_autoload = PREMIERO_ATK_DIR . 'vendor/autoload.php';
 if ( file_exists( $premiero_composer_autoload ) ) {
@@ -1403,6 +1411,9 @@ function premiero_admin_header($active_tab = 'info') {
         'remote-backups' => ['Copias de Seguridad', 'Sincroniza automáticamente las copias terminadas de UpdraftPlus por SFTP.'],
         'notices'    => ['Avisos', 'Registra y controla los avisos mostrados en la administración de WordPress.'],
     ];
+    if ( Premiero_Diagnostics::is_enabled() ) {
+        $sections['diagnostic'] = ['Diagnóstico', 'Diagnóstico, depuración y reparación avanzada de la instalación.'];
+    }
     $section = $sections[$active_tab] ?? $sections['info'];
     ?>
     <div class="premiero-head" style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 20px;padding-right:20px;">
@@ -1436,6 +1447,9 @@ function premiero_tabs_nav($active) {
         'appearance' => 'Apariencia',
         'monitoring' => 'Monitorización',
     ];
+    if ( Premiero_Diagnostics::is_enabled() ) {
+        $tabs['diagnostic'] = 'Diagnóstico';
+    }
     echo '<h2 class="nav-tab-wrapper" id="premiero-tabs-nav">';
     foreach ($tabs as $slug => $label) {
         $class = $active === $slug ? ' nav-tab nav-tab-active' : ' nav-tab';
@@ -1882,6 +1896,12 @@ function premiero_render_settings_page() {
         echo '<div class="notice notice-success is-dismissible"><p>Menú actualizado.</p></div>';
     }
 
+    /* Guardado modo diagnóstico (Acerca de) */
+    if ( 'info' === $active && isset($_POST['premiero_diag_submit']) && check_admin_referer('premiero_diag_nonce') ) {
+        update_option( PREMIERO_OPT_DIAG_ENABLED, isset($_POST[PREMIERO_OPT_DIAG_ENABLED]) ? 1 : 0 );
+        echo '<div class="notice notice-success is-dismissible"><p>Modo diagnóstico actualizado.</p></div>';
+    }
+
     premiero_admin_header($active);
     premiero_tabs_nav($active);
 
@@ -1974,6 +1994,21 @@ function premiero_render_settings_page() {
                         <h2>Actualizaciones</h2>
                         <p>Las versiones estables se reciben desde GitHub Releases mediante el actualizador normal de WordPress.</p>
                         <p><strong>Versión instalada:</strong> <?php echo esc_html( PREMIERO_ATK_VER ); ?></p>
+                    </section>
+
+                    <section class="premiero-info-panel">
+                        <h2>Modo diagnóstico avanzado</h2>
+                        <form method="post">
+                            <?php wp_nonce_field('premiero_diag_nonce'); ?>
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="<?php echo esc_attr(PREMIERO_OPT_DIAG_ENABLED); ?>" value="1" <?php checked( Premiero_Diagnostics::is_enabled() ); ?>>
+                                    Activar herramientas de diagnóstico y depuración
+                                </label>
+                            </p>
+                            <p class="description">Permite ejecutar comprobaciones avanzadas y herramientas de reparación sobre esta instalación de WordPress. Algunas acciones pueden modificar archivos o datos. Actívalo únicamente si sabes lo que estás haciendo.</p>
+                            <?php submit_button('Guardar', 'secondary', 'premiero_diag_submit'); ?>
+                        </form>
                     </section>
 
                     <section class="premiero-info-panel">
@@ -2362,6 +2397,10 @@ function premiero_render_settings_page() {
 
         case 'notices':
             Premiero_Admin_Notices::render_tab();
+        break;
+
+        case 'diagnostic':
+            Premiero_Diagnostics_UI::render_tab();
         break;
 
         /* ====================== PESTAÑA ADMIN UI ====================== */
