@@ -427,11 +427,13 @@ final class Premiero_Diagnostics {
 	 * Recorre archivos PHP con límites de tiempo y cantidad para evitar
 	 * agotar memoria o superar el timeout en instalaciones grandes.
 	 */
-	private static function walk_php_files( $dir, $max_files = 3000, $max_seconds = 10 ) {
+	private static function walk_php_files( $dir, $max_files = 3000, $max_seconds = 10, $excluded = null ) {
 		$start    = microtime( true );
 		$files    = array();
 		$stack    = array( untrailingslashit( $dir ) );
-		$excluded = array( 'wp-content/cache', 'wp-content/upgrade', 'wp-content/uploads' );
+		if ( ! is_array( $excluded ) ) {
+			$excluded = array( 'wp-content/cache', 'wp-content/upgrade', 'wp-content/uploads' );
+		}
 
 		while ( $stack ) {
 			$current = array_pop( $stack );
@@ -538,7 +540,8 @@ final class Premiero_Diagnostics {
 			$items[] = array( 'status' => 'problem', 'label' => 'WP_DEBUG_DISPLAY', 'detail' => 'Está activo: los errores se muestran en pantalla.' );
 		}
 		if ( ! isset( $defined['DISALLOW_FILE_EDIT'] ) ) {
-			$items[] = array( 'status' => 'warning', 'label' => 'DISALLOW_FILE_EDIT', 'detail' => 'No definido: el editor de archivos de wp-admin está disponible.' );
+			// Recomendación de seguridad, no una incidencia ni una evidencia de compromiso.
+			$items[] = array( 'status' => 'info', 'label' => 'DISALLOW_FILE_EDIT', 'detail' => 'Editor de archivos disponible — Puede desactivarse mediante DISALLOW_FILE_EDIT.' );
 		}
 		if ( ! isset( $defined['DISALLOW_FILE_MODS'] ) ) {
 			$items[] = array( 'status' => 'info', 'label' => 'DISALLOW_FILE_MODS', 'detail' => 'No definido: las actualizaciones de plugins/temas están permitidas.' );
@@ -585,20 +588,25 @@ final class Premiero_Diagnostics {
 				continue;
 			}
 			if ( preg_match( '/RewriteRule\s+.*https?:\/\//i', $line ) ) {
-				$suspicious[] = 'Redirección externa: ' . substr( $line, 0, 90 );
+				// Una redirección externa puede ser legítima: se informa, no se clasifica como problema.
+				$suspicious[] = array( 'status' => 'info', 'label' => 'Redirección', 'detail' => 'Redirección detectada — Comprueba que el destino sea conocido. ' . substr( $line, 0, 90 ) );
 			} elseif ( preg_match( '/^\s*(php_value|php_flag|AddType\s+.*php|SetHandler)/i', $line ) ) {
-				$suspicious[] = 'Directiva PHP inusual: ' . substr( $line, 0, 90 );
+				$suspicious[] = array( 'status' => 'warning', 'label' => 'Revisar', 'detail' => 'Directiva PHP inusual: ' . substr( $line, 0, 90 ) );
 			}
 		}
-		foreach ( $suspicious as $s ) {
-			$items[] = array( 'status' => 'warning', 'label' => 'Revisar', 'detail' => $s );
+		$review = 0;
+		foreach ( $suspicious as $entry ) {
+			$items[] = array( 'status' => $entry['status'], 'label' => $entry['label'], 'detail' => $entry['detail'] );
+			if ( 'warning' === $entry['status'] ) {
+				++$review;
+			}
 		}
 		if ( ! $suspicious ) {
 			$items[] = array( 'status' => 'ok', 'label' => 'Directivas', 'detail' => 'Sin redirecciones externas ni directivas PHP anómalas detectadas.' );
 		}
 		return array(
 			'items'  => $items,
-			'report' => '.htaccess: ' . ( $suspicious ? count( $suspicious ) . ' elemento(s) a revisar' : 'OK' ),
+			'report' => '.htaccess: ' . ( $review ? $review . ' elemento(s) a revisar' : ( $suspicious ? count( $suspicious ) . ' redirección(es) detectada(s)' : 'OK' ) ),
 			'status' => self::overall_status( $items ),
 		);
 	}
@@ -788,53 +796,199 @@ final class Premiero_Diagnostics {
 	}
 
 	public static function diag_malware_scan() {
-		$files    = self::walk_php_files( ABSPATH );
-		$patterns = array(
-			'eval'            => '/\beval\s*\(/i',
-			'base64_decode'   => '/\bbase64_decode\s*\(/i',
-			'gzinflate'       => '/\bgzinflate\s*\(/i',
-			'str_rot13'       => '/\bstr_rot13\s*\(/i',
-			'assert'          => '/\bassert\s*\(/i',
-			'create_function' => '/\bcreate_function\s*\(/i',
-			'shell_exec'      => '/\bshell_exec\s*\(/i',
-			'system'          => '/\bsystem\s*\(/i',
-			'exec'            => '/\bexec\s*\(/i',
-			'passthru'        => '/\bpassthru\s*\(/i',
-			'hex2bin'         => '/\bhex2bin\s*\(/i',
-			'move_uploaded'   => '/\bmove_uploaded_file\s*\(/i',
+		// El escaneo heurístico excluye el Core (wp-admin, wp-includes), las
+		// librerías de dependencias (cualquier /vendor/ o /node_modules/) y la
+		// propia carpeta del Toolkit, cuyas funciones de diagnóstico contienen
+		// llamadas de riesgo por diseño y aparecerían siempre. Se priorizan
+		// plugins, temas, MU-plugins y archivos PHP en ubicaciones relevantes
+		// (incluido wp-content/uploads), sin verificar ni afirmar nada sobre
+		// el Core. Las exclusiones se indican en el resultado.
+		$self_dir = str_replace( '\\', '/', dirname( dirname( __FILE__ ) ) );
+		$abs_norm = str_replace( '\\', '/', ABSPATH );
+		if ( '' !== $self_dir && 0 === strpos( $self_dir . '/', $abs_norm ) ) {
+			$self_rel = trim( substr( $self_dir, strlen( $abs_norm ) ), '/' );
+		} else {
+			$self_rel = basename( $self_dir );
+		}
+
+		$excluded = array( '/wp-admin', '/wp-includes', '/vendor', '/node_modules', 'wp-content/cache', 'wp-content/upgrade' );
+		if ( '' !== $self_rel && '.' !== $self_rel ) {
+			$excluded[] = $self_rel . '/';
+		}
+
+		$files = self::walk_php_files( ABSPATH, 3000, 10, $excluded );
+
+		// Patrones de baja relevancia: legítimos con frecuencia si aparecen
+		// aislados. No llenan el listado ni se cuentan como elementos a revisar.
+		$low_patterns = array(
+			'base64_decode' => '/\bbase64_decode\s*\(/i',
+			'hex2bin'       => '/\bhex2bin\s*\(/i',
+			'gzinflate'     => '/\bgzinflate\s*\(/i',
+			'assert'        => '/\bassert\s*\(/i',
+			'move_uploaded' => '/\bmove_uploaded_file\s*\(/i',
 		);
-		$matches = array();
+		// Patrones que, por sí mismos, merecen revisión.
+		$review_patterns = array(
+			'eval'            => '/\beval\s*\(/i',
+			'exec'            => '/\bexec\s*\(/i',
+			'system'          => '/\bsystem\s*\(/i',
+			'shell_exec'      => '/\bshell_exec\s*\(/i',
+			'passthru'        => '/\bpassthru\s*\(/i',
+			'create_function' => '/\bcreate_function\s*\(/i',
+			'str_rot13'       => '/\bstr_rot13\s*\(/i',
+			// Escribe un archivo .php, o lo abre en modo de escritura.
+			'php_write'       => '/\b(?:file_put_contents|fwrite|fputs)\s*\([^;]{0,200}?\.php[\'"]|\bfopen\s*\([^;]{0,200}?\.php[\'"]\s*,\s*[\'"](?![rRbB])/i',
+			// Carga dinámica construida con datos de la petición.
+			'dynamic_include' => '/\b(?:include|include_once|require|require_once)\b\s*\(?\s*[^;]{0,120}?\$_(?:GET|POST|REQUEST|COOKIE)/i',
+		);
+		// Decodificadores que sólo elevan la relevancia en combinación.
+		$decoder_patterns = array( 'base64_decode', 'gzinflate', 'hex2bin', 'str_rot13' );
+		$review_names     = array_keys( $review_patterns );
+
+		$high    = array();
+		$review  = array();
+		$omitted = 0;
+
 		foreach ( $files as $file ) {
 			$content = @file_get_contents( $file );
 			if ( false === $content ) {
 				continue;
 			}
-			foreach ( $patterns as $name => $pattern ) {
-				if ( preg_match( $pattern, $content ) ) {
-					$matches[] = array(
-						'file'    => str_replace( ABSPATH, '', str_replace( '\\', '/', $file ) ),
-						'pattern' => $name,
-					);
+			// Los comentarios no son código ejecutable: se ignoran para no marcar
+			// funciones citadas en documentación, anotaciones o prosa.
+			$source = self::malware_strip_comments( $content );
+
+			$matched = array();
+			foreach ( $low_patterns as $name => $pattern ) {
+				if ( preg_match( $pattern, $source ) ) {
+					$matched[] = $name;
 				}
 			}
-			if ( count( $matches ) >= 40 ) {
-				break;
+			foreach ( $review_patterns as $name => $pattern ) {
+				if ( preg_match( $pattern, $source ) ) {
+					$matched[] = $name;
+				}
+			}
+			if ( ! $matched ) {
+				continue;
+			}
+
+			$matched      = array_values( array_unique( $matched ) );
+			$decoder_hits = count( array_intersect( $matched, $decoder_patterns ) );
+			$review_hits  = count( array_intersect( $matched, $review_names ) );
+
+			$entry    = array( 'file' => str_replace( ABSPATH, '', str_replace( '\\', '/', $file ) ), 'patterns' => $matched );
+			$location = self::malware_location_weight( $entry['file'] );
+
+			if ( self::malware_is_high_risk( $source, $matched, $decoder_hits, $review_hits ) ) {
+				$entry['level'] = 'high';
+				$high[]         = $entry;
+			} elseif ( $review_hits > 0 || 'review' === $location ) {
+				$entry['level'] = 'review';
+				$review[]       = $entry;
+			} else {
+				// Sólo patrones de baja relevancia aislados: información, no aviso.
+				$omitted += count( $matched );
 			}
 		}
-		$items = array();
-		if ( ! $matches ) {
-			$items[] = array( 'status' => 'ok', 'label' => 'Sin coincidencias', 'detail' => 'No se detectaron patrones sospechosos en los archivos analizados.' );
+		$items   = array();
+		$items[] = array( 'status' => 'info', 'label' => 'Alcance', 'detail' => 'Se revisan plugins, temas, MU-plugins y archivos PHP relevantes. Quedan fuera el Core (wp-admin, wp-includes), las librerías /vendor/ y /node_modules/ y el propio Toolkit, cuyas funciones de diagnóstico contienen llamadas de riesgo por diseño.' );
+		$items[] = array( 'status' => 'info', 'label' => 'Prioridad alta', 'detail' => (string) count( $high ) );
+		$items[] = array( 'status' => 'info', 'label' => 'Elementos a revisar', 'detail' => (string) count( $review ) );
+		$items[] = array( 'status' => 'info', 'label' => 'Coincidencias de baja relevancia omitidas', 'detail' => (string) $omitted );
+
+		$relevant = array_merge( $high, $review );
+		if ( ! $relevant ) {
+			$items[] = array( 'status' => 'ok', 'label' => 'Sin patrones de relevancia alta o media', 'detail' => 'Ningún archivo analizado combina patrones que requieran revisión.' );
 		} else {
-			$items[] = array( 'status' => 'warning', 'label' => 'Coincidencias a revisar', 'detail' => count( $matches ) . ' coincidencia(s) en archivos PHP. No son malware por sí mismas: revisa cada caso.' );
-			foreach ( $matches as $match ) {
-				$items[] = array( 'status' => 'warning', 'label' => $match['file'], 'detail' => 'Patrón: ' . $match['pattern'] );
+			foreach ( $relevant as $entry ) {
+				$items[] = array(
+					'status' => ( 'high' === $entry['level'] ) ? 'problem' : 'warning',
+					'label'  => $entry['file'],
+					'detail' => 'Nivel: ' . ( 'high' === $entry['level'] ? 'Prioridad alta' : 'Revisar' ) . ' — Patrones: ' . implode( ', ', $entry['patterns'] ),
+				);
 			}
 		}
+		$items[] = array( 'status' => 'info', 'label' => 'Nota', 'detail' => 'Análisis heurístico sobre código ejecutable (se ignoran los comentarios): no confirma ni descarta malware.' );
+
 		return array(
 			'items'  => $items,
-			'report' => 'Patrones sospechosos: ' . count( $matches ) . ' coincidencia(s) a revisar',
+			'report' => 'Patrones sospechosos: ' . count( $high ) . ' prioridad alta, ' . count( $review ) . ' a revisar, ' . $omitted . ' coincidencias de baja relevancia omitidas',
 			'status' => self::overall_status( $items ),
 		);
+	}
+
+	/**
+	 * Quita comentarios antes de buscar patrones: el texto comentado no se
+	 * ejecuta y suele citar funciones de riesgo de forma legítima (documentación,
+	 * anotaciones phpcs, prosa). Se conservan las URLs (`://`) y los `#` que no
+	 * abren línea, para no romper cadenas con rutas o colores.
+	 */
+	private static function malware_strip_comments( $code ) {
+		$code = (string) preg_replace( '~/\*.*?\*/~s', ' ', (string) $code );
+		$code = (string) preg_replace( '~(?<!:)//[^\n]*~', ' ', $code );
+		$code = (string) preg_replace( '~^[ \t]*#[^\n]*~m', ' ', $code );
+		return $code;
+	}
+
+	/**
+	 * Combina de forma sencilla varios patrones del mismo archivo para elevar
+	 * la relevancia a «Prioridad alta». No analiza sintaxis PHP: sólo
+	 * combinaciones detectables de forma razonablemente fiable. La entrada de
+	 * usuario sólo cuenta cuando aparece dentro de la propia llamada, para no
+	 * marcar archivos que simplemente usan superglobales en otra parte.
+	 */
+	private static function malware_is_high_risk( $source, $matched, $decoder_hits, $review_hits ) {
+		$has = static function ( $name ) use ( $matched ) {
+			return in_array( $name, $matched, true );
+		};
+		// Datos codificados + descompresión + ejecución dinámica.
+		if ( $has( 'base64_decode' ) && $has( 'gzinflate' ) && $has( 'eval' ) ) {
+			return true;
+		}
+		// Varios decodificadores distintos junto con eval.
+		if ( $decoder_hits >= 2 && $has( 'eval' ) ) {
+			return true;
+		}
+		// Entrada de usuario usada como código en la propia llamada.
+		if ( preg_match( '/\b(?:eval|assert)\s*\([^;]{0,200}?\$_(?:GET|POST|REQUEST|COOKIE)/i', $source ) ) {
+			return true;
+		}
+		// Datos decodificados que acaban escribiendo un archivo PHP.
+		if ( $decoder_hits >= 1 && $has( 'php_write' ) ) {
+			return true;
+		}
+		// Varias primitivas sensibles combinadas en el mismo archivo.
+		if ( $review_hits >= 3 || ( $has( 'eval' ) && $review_hits >= 2 ) ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Nivel mínimo que aporta la ubicación del archivo.
+	 *
+	 * PHP en wp-content/uploads o en la raíz de la instalación (fuera de los
+	 * archivos esperados) se muestra al menos como «Revisar». La ubicación no
+	 * convierte por sí sola un archivo en malware.
+	 */
+	private static function malware_location_weight( $relative ) {
+		$rel = str_replace( '\\', '/', (string) $relative );
+		if ( false !== strpos( $rel, 'wp-content/uploads/' ) ) {
+			return 'review';
+		}
+		if ( false === strpos( $rel, '/' ) ) {
+			$known = array(
+				'index.php', 'wp-config.php', 'wp-load.php', 'wp-blog-header.php',
+				'wp-cron.php', 'wp-links-opml.php', 'wp-login.php', 'wp-mail.php',
+				'wp-settings.php', 'wp-signup.php', 'wp-trackback.php',
+				'wp-activate.php', 'xmlrpc.php',
+			);
+			if ( ! in_array( strtolower( $rel ), $known, true ) ) {
+				return 'review';
+			}
+		}
+		return 'ok';
 	}
 	/* ====================== Reparaciones ====================== */
 
