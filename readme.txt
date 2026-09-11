@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.6.5
+Stable tag: 3.7.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,12 @@ Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 
 Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
 
 == Changelog ==
+
+= 3.7.0 =
+
+* Nueva pestaña Diagnóstico con comprobaciones y reparaciones que se ejecutan siempre bajo demanda.
+* Visor de logs con una ficha de estado compacta y sin exponer rutas absolutas del servidor.
+* Consola PHP con aspecto de terminal integrado y advertencia de ejecución más discreta.
 
 = 3.6.5 =
 
