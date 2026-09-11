@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.7.0
+Stable tag: 3.7.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,21 @@ Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 
 Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
 
 == Changelog ==
+
+= 3.7.1 =
+
+* El análisis heurístico de patrones sospechosos excluye el Core (wp-admin, wp-includes), las librerías /vendor/ y /node_modules/ y la propia carpeta del Toolkit, que contiene funciones de riesgo por diseño y generaba falsos positivos sobre sí mismo.
+* Los comentarios de bloque y de línea se ignoran durante el análisis: las funciones citadas en documentación, anotaciones phpcs o prosa ya no producen avisos.
+* Cada archivo aparece una sola vez con sus patrones agrupados y dos niveles de relevancia: «Prioridad alta» sólo cuando el mismo archivo combina decodificación, descompresión y ejecución dinámica, o cuando una superglobal se ejecuta dentro de la propia llamada (eval/assert).
+* Las coincidencias de baja relevancia (base64_decode, gzinflate, hex2bin, assert, move_uploaded_file aislados) se cuentan aparte y dejan de llenar el listado.
+* La ubicación eleva el resultado a «Revisar» sin clasificarlo como malware: PHP inesperado en la raíz o en wp-content/uploads/.
+* Las coincidencias siguen mostrándose como «coincidencias a revisar», nunca como malware confirmado.
+* Nueva presentación en dos fichas para «Historial e informe»: el historial reciente con su acción de limpieza y el informe con copia al portapapeles.
+* La ausencia de DISALLOW_FILE_EDIT se muestra como recomendación de seguridad y no como problema.
+* Las redirecciones externas de .htaccess se muestran como información a revisar.
+* Corregidos los fondos blancos de la pestaña Diagnóstico cuando el Toolkit usa modo oscuro.
+* Nueva presentación en fichas para «Información básica del sistema».
+* Añadidos los botones «Limpiar editor» y «Limpiar salida» en Premiero PHP Console.
 
 = 3.7.0 =
 

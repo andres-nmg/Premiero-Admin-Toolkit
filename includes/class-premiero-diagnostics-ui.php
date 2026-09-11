@@ -21,6 +21,63 @@ final class Premiero_Diagnostics_UI {
 		$wp_ver   = get_bloginfo( 'version' );
 		$php_ver  = PHP_VERSION;
 
+		// Resumen de entorno para "Información básica del sistema".
+		// Sólo APIs/constantes nativas: sin consultas pesadas ni operaciones costosas.
+		$env_type  = wp_get_environment_type();
+		$is_prod   = ( 'production' === $env_type );
+		$is_multi  = is_multisite();
+		$is_https  = is_ssl();
+		$site_host = wp_parse_url( home_url(), PHP_URL_HOST );
+		if ( ! $site_host ) {
+			$site_host = wp_parse_url( site_url(), PHP_URL_HOST );
+		}
+
+		$php_memory = ini_get( 'memory_limit' );
+		$max_exec   = ini_get( 'max_execution_time' );
+		$upload_max = ini_get( 'upload_max_filesize' );
+		$post_max   = ini_get( 'post_max_size' );
+
+		$wp_mem     = defined( 'WP_MEMORY_LIMIT' ) ? WP_MEMORY_LIMIT : '';
+		$wp_max_mem = defined( 'WP_MAX_MEMORY_LIMIT' ) ? WP_MAX_MEMORY_LIMIT : '';
+		$wp_memory  = ( '' !== $wp_mem || '' !== $wp_max_mem )
+			? ( ( '' !== $wp_mem ? $wp_mem : 'N/D' ) . ' / ' . ( '' !== $wp_max_mem ? $wp_max_mem : 'N/D' ) )
+			: 'N/D';
+
+		$debug         = defined( 'WP_DEBUG' ) && WP_DEBUG;
+		$debug_log     = defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG;
+		$debug_display = defined( 'WP_DEBUG_DISPLAY' ) && WP_DEBUG_DISPLAY;
+		$wp_cache      = defined( 'WP_CACHE' ) && WP_CACHE;
+
+		global $wpdb;
+		$db_version = ( $wpdb instanceof wpdb ) ? (string) $wpdb->db_version() : '';
+		$db_label   = ( false !== stripos( $db_version, 'mariadb' ) ) ? 'MariaDB' : 'MySQL';
+		$db_value   = preg_replace( '/-.*$/', '', $db_version );
+		$db_value   = ( '' !== $db_value ) ? $db_value : 'N/D';
+
+		$server_name = 'N/D';
+		if ( isset( $_SERVER['SERVER_SOFTWARE'] ) && is_string( $_SERVER['SERVER_SOFTWARE'] ) ) {
+			$server_soft = sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) );
+			if ( '' !== $server_soft ) {
+				$server_map = array(
+					'litespeed' => 'LiteSpeed',
+					'nginx'     => 'nginx',
+					'apache'    => 'Apache',
+					'iis'       => 'IIS',
+					'caddy'     => 'Caddy',
+				);
+				foreach ( $server_map as $needle => $label ) {
+					if ( false !== stripos( $server_soft, $needle ) ) {
+						$server_name = $label;
+						break;
+					}
+				}
+				if ( 'N/D' === $server_name ) {
+					$server_token = preg_split( '/[\s\/]+/', $server_soft );
+					$server_name  = ! empty( $server_token[0] ) ? $server_token[0] : 'N/D';
+				}
+			}
+		}
+
 		// El visor lee siempre wp-content/debug.log (independiente de WP_DEBUG_LOG).
 		$log_path = Premiero_Diagnostics::temp_log_path();
 		$log_view = '';
@@ -78,8 +135,20 @@ final class Premiero_Diagnostics_UI {
 			.premiero-diagnostics .premiero-diag-count.warning{color:#b26f00}
 			.premiero-diagnostics .premiero-diag-count.problem{color:#d63638}
 			.premiero-diagnostics .premiero-diag-php{background:#f6f7f7;border:1px solid #dcdcde;border-radius:6px;padding:12px;max-height:min(72vh,640px);overflow:auto;white-space:pre-wrap;font-family:monospace;margin:0}
-			.premiero-diagnostics .premiero-diag-history{list-style:none;margin:8px 0 0;padding:0}
-			.premiero-diagnostics .premiero-diag-history li{padding:6px 8px;border-bottom:1px solid #f0f0f1;font-size:12px}
+			.premiero-diagnostics .premiero-hist-panel{border:1px solid #dcdcde;border-radius:8px;background:#fff;padding:12px 14px;min-width:0}
+			.premiero-diagnostics .premiero-hist-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 4px}
+			.premiero-diagnostics .premiero-hist-title{font-size:14px;font-weight:600;color:#1d2327;letter-spacing:.01em}
+			.premiero-diagnostics .premiero-hist-desc{margin:0 0 10px;font-size:11px;line-height:1.5;color:#646970}
+			.premiero-diagnostics .premiero-diag-history{list-style:none;margin:0;padding:0;border-top:1px solid #f0f0f1}
+			.premiero-diagnostics .premiero-diag-history li{display:flex;flex-direction:column;gap:2px;padding:8px 2px;border-bottom:1px solid #f0f0f1}
+			.premiero-diagnostics .premiero-diag-history li:last-child{border-bottom:0}
+			.premiero-diagnostics .premiero-history-tool{font-size:12px;font-weight:600;color:#1d2327;overflow-wrap:anywhere}
+			.premiero-diagnostics .premiero-history-summary{font-size:12px;color:#3c434a;overflow-wrap:anywhere}
+			.premiero-diagnostics .premiero-history-meta{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;color:#646970}
+			.premiero-diagnostics .premiero-report-wrap{display:flex;flex-direction:column;gap:6px}
+			.premiero-diagnostics .premiero-report-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#646970}
+			.premiero-diagnostics #premiero-report-text{margin:0;min-height:min(42vh,240px);max-height:min(60vh,440px);padding:10px 12px;border:1px solid #dcdcde;border-radius:6px;background:#f6f7f7;color:#1d2327;font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.6;box-shadow:none;resize:vertical}
+			.premiero-diagnostics #premiero-report-text:focus{border-color:var(--premiero-admin-accent,#8a2c0d);box-shadow:0 0 0 1px var(--premiero-admin-accent,#8a2c0d);outline:0}
 			.premiero-diagnostics .premiero-scroll{max-height:min(60vh,420px);overflow:auto}
 			.premiero-diagnostics .premiero-log-controls{border:1px solid #dcdcde;border-radius:8px;background:#fff;padding:14px 16px;margin:10px 0}
 			.premiero-diagnostics .premiero-log-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px}
@@ -116,24 +185,140 @@ final class Premiero_Diagnostics_UI {
 			.premiero-diagnostics #premiero-php-out:not(:empty)::before{content:"SALIDA";display:block;margin:0 0 4px;color:#646970;font-size:10px;font-weight:600;letter-spacing:.08em}
 			.premiero-diagnostics #premiero-php-out .premiero-diag-php{background:#0f1115;border:1px solid #1d2327;border-radius:8px;padding:12px 14px;color:#e6edf3;font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.6;white-space:pre-wrap}
 			.premiero-diagnostics textarea{width:100%;font-family:monospace}
+			.premiero-diagnostics .premiero-term-actions{margin-left:auto;display:inline-flex;gap:6px}
+			.premiero-diagnostics .premiero-term-btn{appearance:none;-webkit-appearance:none;margin:0;padding:3px 9px;border:1px solid #2c3338;border-radius:7px;background:#171b22;color:#9aa4b2;font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;font-weight:600;line-height:1.6;letter-spacing:.02em;cursor:pointer}
+			.premiero-diagnostics .premiero-term-btn:hover,.premiero-diagnostics .premiero-term-btn:focus{border-color:#3f4954;background:#20262e;color:#e6edf3;outline:0;box-shadow:none}
+			.premiero-diagnostics .premiero-term-btn:focus-visible{outline:2px solid #4ade80;outline-offset:1px}
+			.premiero-diagnostics .premiero-diag-info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;align-content:start}
+			.premiero-diagnostics .premiero-diag-info .premiero-log-status-value{text-transform:none}
+			.premiero-diagnostics .premiero-diag-info .premiero-log-status-item{min-width:0}
+			.premiero-diagnostics .premiero-diag-group-label{grid-column:1/-1;margin:6px 0 0;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#646970}
+			.premiero-diagnostics .premiero-diag-group-label:first-child{margin-top:0}
+			.premiero-diagnostics .premiero-diag-span-2{grid-column:span 2}
+			.premiero-diagnostics .premiero-diag-span-all{grid-column:1/-1}
+			.premiero-diagnostics .premiero-diag-meta{font-size:11px;font-weight:600;color:#646970;overflow-wrap:anywhere}
+			.premiero-diagnostics .premiero-diag-info code.premiero-log-status-value{font-size:12px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+			@media screen and (max-width:1180px){
+				.premiero-diagnostics .premiero-diag-info{grid-template-columns:repeat(2,minmax(0,1fr))}
+				.premiero-diagnostics .premiero-diag-span-2{grid-column:1/-1}
+			}
+			@media screen and (max-width:640px){
+				.premiero-diagnostics .premiero-diag-info{grid-template-columns:1fr}
+			}
 			@media screen and (max-width:782px){
 				.premiero-diagnostics .premiero-diag-2col,.premiero-diagnostics .premiero-diag-2col-even,.premiero-diagnostics .premiero-diag-2col-repair{grid-template-columns:1fr}
 				.premiero-diagnostics .premiero-diag-panel{max-height:none}
 			}
+			/* Modo oscuro del Toolkit: reutiliza body.premiero-admin-dark y sus variables. */
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-panel,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-result,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-tool-item,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-repair-item,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-controls{border-color:var(--premiero-admin-border,#374151);background:var(--premiero-admin-surface,#1f2937);color:var(--premiero-admin-text,#f3f4f6)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-tool-item:hover,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-repair-item.is-open .premiero-tool-item{border-color:var(--premiero-admin-border,#374151);background:var(--premiero-admin-canvas,#111827)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-status-item{border-color:var(--premiero-admin-border,#374151);background:var(--premiero-admin-canvas,#111827)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-php{border-color:var(--premiero-admin-border,#374151);background:var(--premiero-admin-canvas,#111827);color:var(--premiero-admin-text,#f3f4f6)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-repair-body,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-items li,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-history li{border-color:var(--premiero-admin-border,#374151)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-tool-item strong,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-items strong,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-summary,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-title,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-status-value{color:var(--premiero-admin-text,#f3f4f6)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-tool-item span,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-placeholder,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-hint,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-note,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-status-label{color:var(--premiero-admin-muted,#b6c0ce)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-group-label,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-meta{color:var(--premiero-admin-muted,#b6c0ce)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-state.is-on{background:rgba(74,222,128,.14);border-color:rgba(74,222,128,.4);color:#4ade80}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-state.is-off{background:var(--premiero-admin-canvas,#111827);border-color:var(--premiero-admin-border,#374151);color:var(--premiero-admin-muted,#b6c0ce)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-state.is-warn{background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.4);color:#fbbf24}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-status-ok::before,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-count.ok,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-status-value.is-ok{color:#4ade80}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-status-warning::before,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-count.warning,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-log-status-value.is-bad{color:#fbbf24}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-status-problem::before,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-count.problem{color:#f87171}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-status-info::before{color:#60a5fa}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-hist-panel{border-color:var(--premiero-admin-border,#374151);background:var(--premiero-admin-surface,#1f2937);color:var(--premiero-admin-text,#f3f4f6)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-hist-title{color:var(--premiero-admin-text,#f3f4f6)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-hist-desc,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-report-tag{color:var(--premiero-admin-muted,#b6c0ce)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-diag-history{border-color:var(--premiero-admin-border,#374151)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-history-tool,
+			body.premiero-admin-dark .premiero-diagnostics .premiero-history-summary{color:var(--premiero-admin-text,#f3f4f6)}
+			body.premiero-admin-dark .premiero-diagnostics .premiero-history-meta{color:var(--premiero-admin-muted,#b6c0ce)}
+			body.premiero-admin-dark .premiero-diagnostics #premiero-report-text{border-color:var(--premiero-admin-border,#374151);background:var(--premiero-admin-canvas,#111827);color:var(--premiero-admin-text,#f3f4f6)}
 			</style>
 
 			<div class="premiero-diag-2col premiero-diag-2col-even">
 			<section class="premiero-diag-col">
 				<h3>Información básica del sistema</h3>
-				<div class="premiero-diag-result">
-					<ul class="premiero-diag-items">
-						<li class="premiero-diag-status-info"><strong>WordPress</strong> — <span><?php echo esc_html( $wp_ver ); ?></span></li>
-						<li class="premiero-diag-status-info"><strong>PHP</strong> — <span><?php echo esc_html( $php_ver ); ?></span></li>
-						<li class="premiero-diag-status-info"><strong>Entorno</strong> — <span><?php echo esc_html( wp_get_environment_type() ); ?></span></li>
-						<li class="premiero-diag-status-info"><strong>memory_limit</strong> — <span><?php echo esc_html( ini_get( 'memory_limit' ) ); ?></span></li>
-						<li class="premiero-diag-status-info"><strong>WP_DEBUG</strong> — <span><?php echo defined( 'WP_DEBUG' ) && WP_DEBUG ? 'ON' : 'OFF'; ?></span></li>
-						<li class="premiero-diag-status-info"><strong>ABSPATH</strong> — <span><?php echo esc_html( ABSPATH ); ?></span></li>
-					</ul>
+				<?php
+				$info_groups = array(
+					'Sistema'  => array(
+						array(
+							'label'      => 'WordPress',
+							'value'      => $wp_ver,
+							'meta'       => $env_type . ' · ' . ( $is_multi ? 'multisite' : 'single site' ),
+							'card_class' => 'premiero-diag-span-2',
+						),
+						array(
+							'label' => 'Dominio',
+							'value' => $site_host ? $site_host : 'N/D',
+						),
+					),
+					'Servidor' => array(
+						array( 'label' => 'PHP', 'value' => $php_ver ),
+						array( 'label' => $db_label, 'value' => $db_value ),
+						array( 'label' => 'Servidor web', 'value' => $server_name ),
+						array( 'label' => 'HTTPS', 'value' => $is_https ? 'Sí' : 'No', 'value_class' => $is_https ? 'is-ok' : '' ),
+					),
+					'Recursos' => array(
+						array( 'label' => 'Memoria PHP', 'value' => $php_memory ? $php_memory : 'N/D' ),
+						array( 'label' => 'WP Memory', 'value' => $wp_memory ),
+						array( 'label' => 'Max execution', 'value' => ( '' !== $max_exec ? $max_exec . ' s' : 'N/D' ) ),
+						array( 'label' => 'Upload max', 'value' => $upload_max ? $upload_max : 'N/D' ),
+						array( 'label' => 'Post max', 'value' => $post_max ? $post_max : 'N/D' ),
+					),
+					'Debug'    => array(
+						array( 'label' => 'WP_DEBUG', 'value' => $debug ? 'ON' : 'OFF', 'value_class' => ( $debug && $is_prod ) ? 'is-bad' : '' ),
+						array( 'label' => 'Debug log', 'value' => $debug_log ? 'ON' : 'OFF', 'value_class' => $debug_log ? 'is-ok' : '' ),
+						array( 'label' => 'Debug display', 'value' => $debug_display ? 'ON' : 'OFF', 'value_class' => ( $debug_display && $is_prod ) ? 'is-bad' : '' ),
+						array( 'label' => 'WP_CACHE', 'value' => $wp_cache ? 'ON' : 'OFF', 'value_class' => $wp_cache ? 'is-ok' : '' ),
+					),
+				);
+				$info_paths = array(
+					array( 'label' => 'ABSPATH', 'value' => ABSPATH ),
+					array( 'label' => 'WP_CONTENT_DIR', 'value' => WP_CONTENT_DIR ),
+				);
+				?>
+				<div class="premiero-diag-info">
+					<?php foreach ( $info_groups as $group_name => $group_cards ) : ?>
+						<span class="premiero-diag-group-label"><?php echo esc_html( $group_name ); ?></span>
+						<?php foreach ( $group_cards as $card ) : ?>
+							<div class="premiero-log-status-item<?php echo ! empty( $card['card_class'] ) ? ' ' . esc_attr( $card['card_class'] ) : ''; ?>">
+								<span class="premiero-log-status-label"><?php echo esc_html( $card['label'] ); ?></span>
+								<span class="premiero-log-status-value<?php echo ! empty( $card['value_class'] ) ? ' ' . esc_attr( $card['value_class'] ) : ''; ?>"><?php echo esc_html( $card['value'] ); ?></span>
+								<?php if ( ! empty( $card['meta'] ) ) : ?>
+									<span class="premiero-diag-meta"><?php echo esc_html( $card['meta'] ); ?></span>
+								<?php endif; ?>
+							</div>
+						<?php endforeach; ?>
+					<?php endforeach; ?>
+					<span class="premiero-diag-group-label">Rutas</span>
+					<?php foreach ( $info_paths as $path_card ) : ?>
+						<div class="premiero-log-status-item premiero-diag-span-all">
+							<span class="premiero-log-status-label"><?php echo esc_html( $path_card['label'] ); ?></span>
+							<code class="premiero-log-status-value"><?php echo esc_html( $path_card['value'] ); ?></code>
+						</div>
+					<?php endforeach; ?>
 				</div>
 			</section>
 
@@ -230,6 +415,10 @@ final class Premiero_Diagnostics_UI {
 							<div class="premiero-term-bar">
 								<span class="premiero-term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
 								<span class="premiero-term-title">Premiero PHP Console</span>
+								<span class="premiero-term-actions">
+									<button type="button" class="premiero-term-btn" id="premiero-php-clear-code">Limpiar editor</button>
+									<button type="button" class="premiero-term-btn" id="premiero-php-clear-out">Limpiar salida</button>
+								</span>
 							</div>
 							<div class="premiero-term-body">
 								<span class="premiero-term-prompt" aria-hidden="true">&gt;_</span>
@@ -253,28 +442,35 @@ final class Premiero_Diagnostics_UI {
 				<h3>Historial e informe</h3>
 				<div class="premiero-diag-2col premiero-diag-2col-even">
 					<div class="premiero-diag-col">
-						<div class="premiero-diag-panel-head">
-							<strong>Historial</strong>
-							<button type="button" class="button" id="premiero-history-clear">Limpiar historial</button>
+						<div class="premiero-hist-panel">
+							<div class="premiero-hist-head">
+								<span class="premiero-hist-title">Historial</span>
+								<button type="button" class="button" id="premiero-history-clear">Limpiar historial</button>
+							</div>
+							<p class="premiero-hist-desc">Últimas ejecuciones registradas.</p>
+							<ul id="premiero-diag-history" class="premiero-diag-history premiero-scroll">
+								<?php foreach ( $history as $entry ) : ?>
+									<li>
+										<strong class="premiero-history-tool"><?php echo esc_html( isset( $entry['tool'] ) ? $entry['tool'] : '' ); ?></strong>
+										<span class="premiero-history-summary"><?php echo esc_html( isset( $entry['summary'] ) ? $entry['summary'] : '' ); ?></span>
+										<small class="premiero-history-meta"><?php echo esc_html( isset( $entry['user'] ) ? $entry['user'] : '' ); ?> · <?php echo esc_html( isset( $entry['time'] ) ? get_date_from_gmt( gmdate( 'Y-m-d H:i:s', (int) $entry['time'] ), 'd/m/Y H:i' ) : '' ); ?></small>
+									</li>
+								<?php endforeach; ?>
+							</ul>
 						</div>
-						<p class="description">Últimas ejecuciones registradas (máximo <?php echo esc_html( Premiero_Diagnostics::MAX_HISTORY ); ?> entradas).</p>
-						<ul id="premiero-diag-history" class="premiero-diag-history premiero-scroll">
-							<?php foreach ( $history as $entry ) : ?>
-								<li>
-									<strong><?php echo esc_html( isset( $entry['tool'] ) ? $entry['tool'] : '' ); ?></strong>
-									— <span><?php echo esc_html( isset( $entry['summary'] ) ? $entry['summary'] : '' ); ?></span>
-									<br><small><?php echo esc_html( isset( $entry['user'] ) ? $entry['user'] : '' ); ?> · <?php echo esc_html( isset( $entry['time'] ) ? get_date_from_gmt( gmdate( 'Y-m-d H:i:s', (int) $entry['time'] ), 'd/m/Y H:i' ) : '' ); ?></small>
-								</li>
-							<?php endforeach; ?>
-						</ul>
 					</div>
 					<div class="premiero-diag-col">
-						<div class="premiero-diag-panel-head">
-							<strong>Informe</strong>
-							<button type="button" class="button button-primary" id="premiero-report-copy">Copiar informe</button>
+						<div class="premiero-hist-panel">
+							<div class="premiero-hist-head">
+								<span class="premiero-hist-title">Informe</span>
+								<button type="button" class="button button-primary" id="premiero-report-copy">Copiar informe</button>
+							</div>
+							<p class="premiero-hist-desc">Resumen copiable del estado y acciones recientes.</p>
+							<div class="premiero-report-wrap">
+								<span class="premiero-report-tag">Informe generado</span>
+								<textarea id="premiero-report-text" rows="14" readonly placeholder="Pulsa «Copiar informe» para generar el resumen más reciente."></textarea>
+							</div>
 						</div>
-						<p class="description">Genera un resumen copiable con los resultados más recientes.</p>
-						<textarea id="premiero-report-text" rows="14" readonly></textarea>
 					</div>
 				</div>
 			</section>
@@ -302,7 +498,11 @@ final class Premiero_Diagnostics_UI {
 
 				function prependHistory(entry){
 					if (!entry || !entry.time) return;
-					var line = '<li><strong>' + escapeHtml(entry.tool || '') + '</strong> — <span>' + escapeHtml(entry.summary || '') + '</span><br><small>' + escapeHtml(entry.user || '') + ' · ' + new Date(entry.time * 1000).toLocaleString() + '</small></li>';
+					var line = '<li>'
+						+ '<strong class="premiero-history-tool">' + escapeHtml(entry.tool || '') + '</strong>'
+						+ '<span class="premiero-history-summary">' + escapeHtml(entry.summary || '') + '</span>'
+						+ '<small class="premiero-history-meta">' + escapeHtml(entry.user || '') + ' · ' + new Date(entry.time * 1000).toLocaleString() + '</small>'
+						+ '</li>';
 					$('#premiero-diag-history').prepend(line);
 				}
 
@@ -382,6 +582,12 @@ final class Premiero_Diagnostics_UI {
 				var phpConfirm = $('#premiero-php-confirm');
 				var phpRun = $('#premiero-php-run');
 				phpConfirm.on('change', function(){ phpRun.prop('disabled', !phpConfirm.is(':checked')); });
+				$('#premiero-php-clear-code').on('click', function(){
+					$('#premiero-php-code').val('').trigger('focus');
+				});
+				$('#premiero-php-clear-out').on('click', function(){
+					$('#premiero-php-out').empty();
+				});
 				phpRun.on('click', function(){
 					if (!phpConfirm.is(':checked')) { alert('Marca la casilla de confirmación.'); return; }
 					phpRun.prop('disabled', true).text('Ejecutando…');
