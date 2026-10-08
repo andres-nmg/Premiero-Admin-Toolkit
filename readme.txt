@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.7.1
+Stable tag: 3.8.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,15 @@ Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 
 Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
 
 == Changelog ==
+
+= 3.8.0 =
+
+* Nueva pestaña «Servidor MCP» que incrusta el panel de administración de StifLi Flex MCP dentro del Toolkit, bajo «Ajustes».
+* El menú lateral independiente de Flex MCP se oculta y se sustituye por el submenú «Servidor MCP».
+* Los enlaces internos de Flex MCP se reescriben hacia la pestaña embebida, incluidas sus sub-pestañas y los formularios que redirigen tras guardar.
+* Los assets de Flex MCP se cargan únicamente en la pestaña embebida.
+* Auto-instalación y activación de Flex MCP desde un paquete local cuando no está instalado, conservando su ruta normal de actualización.
+* Suprimido el asistente de incorporación independiente de Flex MCP para que no escape del panel embebido.
 
 = 3.7.1 =
 
