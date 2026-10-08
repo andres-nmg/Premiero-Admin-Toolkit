@@ -50,7 +50,16 @@ jobs:
             --exclude ".github/" \
             --exclude ".gitignore" \
             --exclude ".gitattributes" \
-            --exclude ".DS_Store"
+            --exclude ".DS_Store" \
+            --exclude "vendor/"
+
+          composer install \
+            --working-dir="${PLUGIN_DIR}" \
+            --no-dev \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist \
+            --classmap-authoritative
 
           cd "${PACKAGE_ROOT}"
           zip -rq "${GITHUB_WORKSPACE}/premiero-admin-toolkit.zip" "premiero-admin-toolkit"
