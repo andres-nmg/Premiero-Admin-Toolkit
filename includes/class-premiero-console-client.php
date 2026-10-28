@@ -1777,11 +1777,45 @@ final class Premiero_Console_Client {
 	 * @return string
 	 */
 	private static function get_api_base() {
-		$value = defined( 'PREMIERO_CONSOLE_API_BASE' )
+		$from_constant = defined( 'PREMIERO_CONSOLE_API_BASE' );
+		$value         = $from_constant
 			? (string) PREMIERO_CONSOLE_API_BASE
 			: (string) get_option( self::OPT_API_BASE, '' );
 		$normalized = self::normalize_api_base( $value );
-		return is_wp_error( $normalized ) ? '' : $normalized;
+		if ( is_wp_error( $normalized ) ) {
+			return '';
+		}
+
+		/*
+		 * La consola se trasladó de premiero.es/cms a hub.premiero.es. Las
+		 * instalaciones ya emparejadas guardan la URL antigua: se persiste la
+		 * nueva una sola vez para que el ajuste refleje el destino real.
+		 */
+		if ( ! $from_constant && self::is_legacy_console_url( $value ) ) {
+			self::update_private_option( self::OPT_API_BASE, $normalized );
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Detecta la ubicación antigua de la consola (premiero.es/cms).
+	 *
+	 * @param string $url URL a comprobar.
+	 * @return bool
+	 */
+	private static function is_legacy_console_url( $url ) {
+		return (bool) preg_match( '#^https?://(www\.)?premiero\.es/cms(/|$)#i', trim( (string) $url ) );
+	}
+
+	/**
+	 * Traslada la URL antigua de la consola a hub.premiero.es conservando la ruta.
+	 *
+	 * @param string $url URL introducida o guardada.
+	 * @return string
+	 */
+	private static function migrate_legacy_console_url( $url ) {
+		return (string) preg_replace( '#^https?://(www\.)?premiero\.es/cms(?=/|$)#i', 'https://hub.premiero.es', trim( (string) $url ) );
 	}
 
 	/**
@@ -1791,9 +1825,9 @@ final class Premiero_Console_Client {
 	 */
 	private static function get_configured_console_url_for_form() {
 		if ( defined( 'PREMIERO_CONSOLE_API_BASE' ) ) {
-			return esc_url( (string) PREMIERO_CONSOLE_API_BASE );
+			return esc_url( self::migrate_legacy_console_url( PREMIERO_CONSOLE_API_BASE ) );
 		}
-		return esc_url( (string) get_option( self::OPT_API_BASE, '' ) );
+		return esc_url( self::migrate_legacy_console_url( get_option( self::OPT_API_BASE, '' ) ) );
 	}
 
 	/**
@@ -1803,7 +1837,7 @@ final class Premiero_Console_Client {
 	 * @return string|WP_Error
 	 */
 	private static function normalize_api_base( $url ) {
-		$url = trim( (string) $url );
+		$url = self::migrate_legacy_console_url( $url );
 		if ( '' === $url ) {
 			return new WP_Error( 'console_url_missing', 'Introduce la URL de la consola.' );
 		}
