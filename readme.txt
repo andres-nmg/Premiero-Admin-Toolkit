@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.8.0
+Stable tag: 3.8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,6 +55,10 @@ Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 
 Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
 
 == Changelog ==
+
+= 3.8.1 =
+
+* La conexión con Premiero Maintenance Console migra automáticamente la URL antigua (`premiero.es/cms`) a `https://hub.premiero.es/wp-json/premiero-console/v1`, sin necesidad de volver a emparejar.
 
 = 3.8.0 =
 

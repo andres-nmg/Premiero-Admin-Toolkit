@@ -1,6 +1,6 @@
 # Documentación Técnica: Premiero Admin Toolkit (`premiero-admin-toolkit`)
 
-> Versión analizada: **3.8.0** · `Requires PHP: 7.4` · Text domain `premiero-admin` · Constante global `PREMIERO_ATK_*`.
+> Versión analizada: **3.8.1** · `Requires PHP: 7.4` · Text domain `premiero-admin` · Constante global `PREMIERO_ATK_*`.
 > Plugin de código mayoritariamente **procedimental** (funciones globales) + **8 clases `final` estáticas** en `includes/`. Es el cliente del ecosistema Premiero (Consola de Mantenimientos).
 
 ## 1. Propósito y Lógica de Negocio
