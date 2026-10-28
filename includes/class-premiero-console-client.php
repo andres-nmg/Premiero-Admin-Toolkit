@@ -483,35 +483,21 @@ final class Premiero_Console_Client {
 		}
 
 		$instance_id = self::ensure_installation_id();
-		$payload     = array_merge(
-			array(
-				'token'       => $token,
-				'instance_id' => $instance_id,
-			),
-			self::collect_pairing_site_data()
-		);
-		$body = wp_json_encode( $payload, JSON_UNESCAPED_SLASHES );
-		if ( false === $body ) {
-			$error = new WP_Error( 'pairing_json_error', 'No se pudo preparar la solicitud de emparejamiento.' );
-			self::store_error( $error->get_error_code(), $error->get_error_message() );
-			return $error;
-		}
+		$response    = self::send_pair_request( $api_base, $token, $instance_id );
 
-		$response = self::post_to_console(
-			$api_base . '/pair',
-			array(
-				'timeout'             => 10,
-				'redirection'         => 2,
-				'sslverify'           => true,
-				'limit_response_size' => 64 * KB_IN_BYTES,
-				'headers'             => array(
-					'Accept'       => 'application/json',
-					'Content-Type' => 'application/json; charset=utf-8',
-					'User-Agent'   => self::user_agent(),
-				),
-				'body'                => $body,
-			)
-		);
+		/*
+		 * La consola responde pmc_pair_domain_mismatch cuando esta instancia ya
+		 * pertenece a otro dominio: el sitio es un clon. Se regenera la
+		 * identidad local y se reintenta una vez con el mismo token, que la
+		 * consola no consume al rechazar.
+		 */
+		if ( 'pmc_pair_domain_mismatch' === self::console_error_code( $response ) ) {
+			$instance_id = wp_generate_uuid4();
+			$response    = self::send_pair_request( $api_base, $token, $instance_id );
+			if ( ! is_wp_error( $response ) && 2 === (int) ( wp_remote_retrieve_response_code( $response ) / 100 ) ) {
+				self::update_private_option( self::OPT_INSTALLATION_ID, $instance_id );
+			}
+		}
 
 		if ( is_wp_error( $response ) ) {
 			self::store_error( $response->get_error_code(), $response->get_error_message() );
@@ -520,9 +506,13 @@ final class Premiero_Console_Client {
 
 		$status_code = (int) wp_remote_retrieve_response_code( $response );
 		if ( $status_code < 200 || $status_code >= 300 ) {
-			$error = new WP_Error(
+			$remote_code    = self::console_error_code( $response );
+			$remote_message = self::console_error_message( $response );
+			$error          = new WP_Error(
 				'pairing_http_' . $status_code,
-				'La consola rechazó el emparejamiento (HTTP ' . $status_code . ').'
+				'La consola rechazó el emparejamiento (HTTP ' . $status_code . ')'
+					. ( $remote_message ? ': ' . $remote_message : '.' )
+					. ( $remote_code ? ' [' . $remote_code . ']' : '' )
 			);
 			self::store_error( $error->get_error_code(), $error->get_error_message(), $status_code );
 			return $error;
@@ -574,6 +564,76 @@ final class Premiero_Console_Client {
 		self::schedule_size_soon( 60 );
 
 		return true;
+	}
+
+	/**
+	 * Envía la petición de emparejamiento para una identidad de instancia.
+	 *
+	 * @param string $api_base    Base API normalizada.
+	 * @param string $token       Token de emparejamiento.
+	 * @param string $instance_id UUID local de la instancia.
+	 * @return array|WP_Error
+	 */
+	private static function send_pair_request( $api_base, $token, $instance_id ) {
+		$payload = array_merge(
+			array(
+				'token'       => $token,
+				'instance_id' => $instance_id,
+			),
+			self::collect_pairing_site_data()
+		);
+		$body = wp_json_encode( $payload, JSON_UNESCAPED_SLASHES );
+		if ( false === $body ) {
+			return new WP_Error( 'pairing_json_error', 'No se pudo preparar la solicitud de emparejamiento.' );
+		}
+
+		return self::post_to_console(
+			$api_base . '/pair',
+			array(
+				'timeout'             => 10,
+				'redirection'         => 2,
+				'sslverify'           => true,
+				'limit_response_size' => 64 * KB_IN_BYTES,
+				'headers'             => array(
+					'Accept'       => 'application/json',
+					'Content-Type' => 'application/json; charset=utf-8',
+					'User-Agent'   => self::user_agent(),
+				),
+				'body'                => $body,
+			)
+		);
+	}
+
+	/**
+	 * Código de error REST devuelto por la consola, si lo hay.
+	 *
+	 * @param array|WP_Error $response Respuesta HTTP.
+	 * @return string
+	 */
+	private static function console_error_code( $response ) {
+		if ( is_wp_error( $response ) ) {
+			return '';
+		}
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+		return is_array( $data ) && isset( $data['code'] ) && is_scalar( $data['code'] )
+			? sanitize_key( (string) $data['code'] )
+			: '';
+	}
+
+	/**
+	 * Mensaje de error REST devuelto por la consola, si lo hay.
+	 *
+	 * @param array|WP_Error $response Respuesta HTTP.
+	 * @return string
+	 */
+	private static function console_error_message( $response ) {
+		if ( is_wp_error( $response ) ) {
+			return '';
+		}
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+		return is_array( $data ) && isset( $data['message'] ) && is_scalar( $data['message'] )
+			? substr( sanitize_text_field( (string) $data['message'] ), 0, 255 )
+			: '';
 	}
 
 	/**
