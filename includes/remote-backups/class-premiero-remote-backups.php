@@ -40,6 +40,7 @@ final class Premiero_Remote_Backups {
 	public static function deactivate() {
 		self::clear_schedule();
 		Premiero_Backup_Worker::release_lock();
+		Premiero_Telegram::deactivate();
 	}
 
 	public static function cron_schedules( $schedules ) {

@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.8.2
+ * Version:     3.8.3
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.8.2');
+define('PREMIERO_ATK_VER', '3.8.3');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_FILE', __FILE__);
@@ -92,6 +92,13 @@ register_deactivation_hook( __FILE__, [ 'Premiero_Command_Client', 'deactivate' 
 
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-admin-notices.php';
 Premiero_Admin_Notices::init();
+
+require_once PREMIERO_ATK_DIR . 'includes/telegram/class-premiero-telegram.php';
+require_once PREMIERO_ATK_DIR . 'includes/telegram/class-premiero-telegram-sender.php';
+require_once PREMIERO_ATK_DIR . 'includes/telegram/class-premiero-telegram-recovery.php';
+require_once PREMIERO_ATK_DIR . 'includes/telegram/class-premiero-telegram-events.php';
+require_once PREMIERO_ATK_DIR . 'includes/telegram/class-premiero-telegram-settings.php';
+Premiero_Telegram::init();
 
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-diagnostics.php';
 Premiero_Diagnostics::init();
@@ -1416,6 +1423,7 @@ function premiero_admin_header($active_tab = 'info') {
         'monitoring' => ['Monitorización', 'Conecta esta instalación con la consola privada de mantenimiento.'],
         'remote-backups' => ['Copias de Seguridad', 'Sincroniza automáticamente las copias terminadas de UpdraftPlus por SFTP.'],
         'notices'    => ['Avisos', 'Registra y controla los avisos mostrados en la administración de WordPress.'],
+        'telegram'   => ['Telegram', 'Avisos de esta web en un chat de Telegram y control de los emails duplicados.'],
     ];
     if ( Premiero_Diagnostics::is_enabled() ) {
         $sections['diagnostic'] = ['Diagnóstico', 'Diagnóstico, depuración y reparación avanzada de la instalación.'];
@@ -1445,6 +1453,7 @@ function premiero_tabs_nav($active) {
         'info'       => 'Acerca de',
         'menuwp'     => 'Menú',
         'notices'    => 'Avisos',
+        'telegram'   => 'Telegram',
         'code'       => 'Código',
         'remote-backups' => 'Copias de Seguridad',
         'repository' => 'Repositorio',
@@ -1593,6 +1602,30 @@ add_action('admin_enqueue_scripts', function($hook){
     .premiero-notices-footer-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
     .premiero-notices-empty{display:flex;flex-direction:column;gap:5px;padding:28px;border:1px dashed #c3c4c7;border-radius:6px;text-align:center;background:#f6f7f7}
     .premiero-notices-empty span{color:#646970}
+    .premiero-telegram{max-width:1180px;padding-right:20px;color:#1d2327}
+    .premiero-telegram .premiero-appearance-form{margin-top:16px}
+    .premiero-telegram>.notice{margin:0 0 12px!important}
+    .premiero-telegram-warning{margin:0!important}
+    .premiero-telegram-fields{margin:8px 0 -8px}
+    .premiero-telegram-fields th{width:150px}
+    .premiero-telegram-inline{display:inline-block;margin-top:8px}
+    .premiero-telegram-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:18px}
+    .premiero-telegram-section-head h2{margin:0 0 6px;font-size:16px}
+    .premiero-telegram-section-head p{margin:0;color:#646970}
+    .premiero-telegram-section-actions{display:flex;flex:0 0 auto;gap:8px}
+    .premiero-telegram-groups{column-count:2;column-gap:12px}
+    .premiero-telegram-group{box-sizing:border-box;width:100%;min-width:0;margin:0 0 12px;break-inside:avoid;padding:14px 15px;border:1px solid #dcdcde;border-radius:7px;background:#fff}
+    .premiero-telegram-group legend{float:left;width:100%;margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid #f0f0f1;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#50575e}
+    .premiero-telegram-group label{clear:both;display:flex;align-items:flex-start;gap:8px;padding:5px 0;line-height:1.4}
+    .premiero-telegram-group label input{flex:0 0 auto;margin:1px 0 0}
+    .premiero-telegram-emails{overflow:hidden;border:1px solid #dcdcde;border-radius:7px}
+    .premiero-telegram-email{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:13px 15px;background:#fff}
+    .premiero-telegram-email+.premiero-telegram-email{border-top:1px solid #dcdcde}
+    .premiero-telegram-email label{display:flex;align-items:flex-start;gap:10px;min-width:0;cursor:pointer}
+    .premiero-telegram-email label input{flex:0 0 auto;margin:2px 0 0}
+    .premiero-telegram-email strong,.premiero-telegram-email small{display:block}
+    .premiero-telegram-email small{margin-top:3px;color:#646970;font-size:12px;line-height:1.45}
+    .premiero-telegram-email>.premiero-notice-state,.premiero-telegram-email>.premiero-notice-type{flex:0 0 auto;white-space:nowrap}
     .premiero-info-layout{display:grid;grid-template-columns:minmax(340px,1.05fr) minmax(420px,.95fr);gap:28px;align-items:start}
     .premiero-info-brand,.premiero-info-panel{box-sizing:border-box;border:1px solid #dcdcde;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05)}
     .premiero-info-brand{padding:36px;border-top:5px solid #6b1c00}
@@ -1736,6 +1769,12 @@ add_action('admin_enqueue_scripts', function($hook){
         .premiero-card{padding:16px;margin-right:10px}
         .premiero-overview{grid-template-columns:1fr}
         .premiero-remote-backups{padding-right:10px}
+        .premiero-telegram{padding-right:0}
+        .premiero-telegram-section-head{display:block}
+        .premiero-telegram-section-actions{margin-top:12px}
+        .premiero-telegram-groups{column-count:1}
+        .premiero-telegram-email{display:block}
+        .premiero-telegram-email>.premiero-notice-state,.premiero-telegram-email>.premiero-notice-type{margin:8px 0 0 26px;white-space:normal}
         .premiero-remote-header{align-items:flex-start;gap:12px;margin-bottom:16px}
         .premiero-remote-header h2{font-size:20px}
         .premiero-remote-status{padding:6px 9px;font-size:11px}
@@ -2408,6 +2447,10 @@ function premiero_render_settings_page() {
 
         case 'notices':
             Premiero_Admin_Notices::render_tab();
+        break;
+
+        case 'telegram':
+            Premiero_Telegram_Settings::render_tab();
         break;
 
         case 'diagnostic':

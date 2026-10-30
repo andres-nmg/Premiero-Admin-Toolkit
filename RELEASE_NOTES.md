@@ -1,40 +1,62 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.8.2`
-- **Etiqueta:** `v3.8.2`
-- **Título de la Release:** `Premiero Admin Toolkit 3.8.2`
+- **Versión:** `3.8.3`
+- **Etiqueta:** `v3.8.3`
+- **Título de la Release:** `Premiero Admin Toolkit 3.8.3`
 - **Asset generado:** `premiero-admin-toolkit.zip`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.8.2
+## Premiero Admin Toolkit 3.8.3
 
-Incluye la migración de la consola a `hub.premiero.es` (3.8.1) y corrige los
-emparejamientos rechazados con HTTP 409.
+Añade avisos por Telegram configurables en cada instalación.
 
 ### Cambios principales
 
-- Las instalaciones que apuntan a
-  `https://www.premiero.es/cms/wp-json/premiero-console/v1` pasan a usar
-  automáticamente `https://hub.premiero.es/wp-json/premiero-console/v1`, sin
-  volver a emparejar.
-- El error de emparejamiento muestra el motivo y el código que devuelve la
-  consola, en lugar de solo el estado HTTP.
-- Si la consola indica que la instancia pertenece a otro dominio (sitio
-  clonado), el Toolkit regenera su identidad y reintenta una vez con el mismo
-  token, creando una ficha nueva.
-- Para conservar una ficha existente, genera el token de reemparejamiento
-  desde esa ficha. Requiere Premiero Maintenance Console 1.10.1.
+- Nueva pestaña **Telegram**: formularios de Contact Form 7 y Elementor Pro,
+  actualizaciones, errores fatales, seguridad y comentarios pendientes, cada
+  aviso con su propia casilla.
+- El plugin no incluye credenciales. El token y el Chat ID se escriben en cada
+  instalación; el token se guarda cifrado y no vuelve a mostrarse.
+  Opcionalmente se pueden definir con `PRM_TG_TOKEN` y `PRM_TG_CHAT_ID` en
+  `wp-config.php`.
+- El Toolkit gestiona el mu-plugin `00-premiero-telegram-recovery.php`, que avisa
+  también de los errores fatales ocurridos antes de cargar el Toolkit. Los
+  fatales fuera del admin se avisan sin enlace de recuperación, como máximo una
+  vez por hora para cada error.
+- Opción de desactivar emails duplicados de WordPress, solo con Telegram activo,
+  credenciales válidas y los avisos equivalentes marcados. El email de
+  restablecimiento de contraseña solo se omite para administradores y con la
+  entrega confirmada. El email de recuperación y los de formularios no se pueden
+  desactivar.
+
+### Después de actualizar
+
+- Los avisos no funcionan hasta configurar cada web en **Premiero > Telegram**.
+  Hasta entonces no se envía nada y los emails de WordPress siguen igual.
+- Todas las opciones de desactivar emails están apagadas por defecto.
+- Si se migra una web a una instalación con otras salts de WordPress, hay que
+  volver a escribir el token. Mientras tanto los emails siguen enviándose.
+
+### Limitaciones conocidas
+
+- En `wp-admin` y en el login, WordPress solo genera el aviso de recuperación si
+  el error viene de un plugin o un tema, y por defecto lo limita a uno al día. No
+  funciona en multisite.
+- Los errores fatales anteriores a cargar los mu-plugins no se pueden avisar.
+- Al eliminar el plugin, los ajustes y el token cifrado permanecen en la base de
+  datos, porque no hay `uninstall.php`.
 
 ### Compatibilidad
 
-- Sin cambios de requisitos respecto a 3.8.0. Requiere WordPress 5.8 o posterior y PHP 7.4 o
-  posterior.
+- Sin cambios de requisitos. Requiere WordPress 5.8 o posterior y PHP 7.4 o
+  posterior. Desactivar el email de nuevo usuario requiere WordPress 6.1; en
+  versiones anteriores la casilla aparece deshabilitada y el email se envía.
 
 ### Publicación
 
-1. Confirma que `Version`, `PREMIERO_ATK_VER` y `Stable tag` indican `3.8.2`.
-2. Crea y publica la etiqueta `v3.8.2`.
+1. Confirma que `Version`, `PREMIERO_ATK_VER` y `Stable tag` indican `3.8.3`.
+2. Crea y publica la etiqueta `v3.8.3`.
 3. GitHub Actions generará y adjuntará automáticamente el archivo
    `premiero-admin-toolkit.zip`.
 4. No adjuntes el ZIP versionado local con otro nombre: el actualizador del
