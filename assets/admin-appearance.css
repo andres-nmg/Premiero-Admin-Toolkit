@@ -529,6 +529,7 @@ body.premiero-admin-dark .nav-tab-active:hover {
 }
 
 /* Componentes propios de Premiero Admin Toolkit. */
+body.premiero-admin-dark .premiero-telegram,
 body.premiero-admin-dark .premiero-remote-backups,
 body.premiero-admin-dark .premiero-notices-console {
 	color: var(--premiero-admin-text);
@@ -542,6 +543,8 @@ body.premiero-admin-dark :where(
 	.premiero-remote-settings-panel,
 	.premiero-notices-overview > div,
 	.premiero-notices-form,
+	.premiero-telegram-group,
+	.premiero-telegram-email,
 	.premiero-info-brand,
 	.premiero-info-panel,
 	.premiero-info-tools a,
@@ -570,6 +573,9 @@ body.premiero-admin-dark :where(
 	.premiero-remote-queue > p,
 	.premiero-remote-settings-panel summary small,
 	.premiero-notices-lead,
+	.premiero-telegram-section-head p,
+	.premiero-telegram-email small,
+	.premiero-telegram-group legend,
 	.premiero-info-tools span
 ) {
 	color: var(--premiero-admin-muted) !important;
@@ -584,6 +590,18 @@ body.premiero-admin-dark :where(
 	border-color: var(--premiero-admin-border) !important;
 	background: var(--premiero-admin-canvas) !important;
 	color: var(--premiero-admin-text) !important;
+}
+
+body.premiero-admin-dark .premiero-telegram-warning {
+	border-left-color: #dba617 !important;
+}
+
+body.premiero-admin-dark :where(
+	.premiero-telegram-emails,
+	.premiero-telegram-email + .premiero-telegram-email,
+	.premiero-telegram-group legend
+) {
+	border-color: var(--premiero-admin-border) !important;
 }
 
 body.premiero-admin-dark .premiero-remote-backups :where(

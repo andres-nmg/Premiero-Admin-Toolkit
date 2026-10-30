@@ -1,6 +1,6 @@
 # Documentación Técnica: Premiero Admin Toolkit (`premiero-admin-toolkit`)
 
-> Versión analizada: **3.8.2** · `Requires PHP: 7.4` · Text domain `premiero-admin` · Constante global `PREMIERO_ATK_*`.
+> Versión analizada: **3.8.3** · `Requires PHP: 7.4` · Text domain `premiero-admin` · Constante global `PREMIERO_ATK_*`.
 > Plugin de código mayoritariamente **procedimental** (funciones globales) + **8 clases `final` estáticas** en `includes/`. Es el cliente del ecosistema Premiero (Consola de Mantenimientos).
 
 ## 1. Propósito y Lógica de Negocio
@@ -17,7 +17,7 @@ Concentra en una sola pestaña de `wp-admin` (slug `premiero-admin`) todo el man
 
 - **CPTs / taxonomías:** ninguno.
 - **Tabla personalizada:** `{prefix}premiero_backup_sync_queue` (`Premiero_Backup_Sync_Queue`, DB_VERSION 2).
-- **Pestañas del admin** (`premiero_tabs_nav()`): `info`, `menuwp`, `notices`, `code`, `remote-backups`, `repository`, `adminui`, `branding`, `appearance`, `monitoring`, `mcp` y `diagnostic` (condicional).
+- **Pestañas del admin** (`premiero_tabs_nav()`): `info`, `menuwp`, `notices`, `telegram`, `code`, `remote-backups`, `repository`, `adminui`, `branding`, `appearance`, `monitoring`, `mcp` y `diagnostic` (condicional).
 
 ### Flujo del módulo de backups remotos
 
@@ -50,6 +50,12 @@ premiero-admin-toolkit/
 │   ├── class-premiero-diagnostics.php           # AJAX de diagnóstico, log temporal, historial
 │   ├── class-premiero-diagnostics-ui.php        # UI de la pestaña Diagnóstico
 │   ├── premiero-flex-mcp-integration.php        # Integración de StifLi Flex MCP como pestaña «Servidor MCP»
+│   ├── telegram/
+│   │   ├── class-premiero-telegram.php              # Ajustes, credenciales cifradas, reglas de emails, mu-plugin
+│   │   ├── class-premiero-telegram-sender.php       # Envío a la API de Telegram (escape, truncado, sin token en errores)
+│   │   ├── class-premiero-telegram-events.php       # Avisos; solo se registran los marcados
+│   │   ├── class-premiero-telegram-recovery.php     # Fatales: enlace de recuperación y fatales fuera del admin
+│   │   └── class-premiero-telegram-settings.php     # Pestaña y admin-post de guardar y probar
 │   └── remote-backups/
 │       ├── class-premiero-remote-backups.php        # Coordinador: cron, scheduling, activación
 │       ├── class-premiero-backup-detector.php       # Detección/estabilización de archivos de Updraft
@@ -112,6 +118,8 @@ premiero-admin-toolkit/
 **Consola:** `premiero_console_enabled`, `premiero_console_api_base`, `premiero_console_installation_id`, `premiero_console_remote_installation_id`, `premiero_console_key_id`, `premiero_console_secret`, `premiero_console_last_sent`, `premiero_console_last_http_code`, `premiero_console_last_error`, `premiero_console_failures`, `premiero_console_next_attempt`, `premiero_console_payload_hash`, `premiero_console_size_cache`, `premiero_console_last_admin_tick`.
 
 **Comandos:** `premiero_console_command_nonces` (índice de nonces), `premiero_console_command_nonce_<sha256>` (opciones individuales, anti-replay), `premiero_console_processed_commands` (máx. 2000), `premiero_console_active_command`, `premiero_console_command_resume` (cron), `premiero_console_update_exclusions` (plugin_file → true), `premiero_console_response_nonces`.
+
+**Telegram:** `premiero_telegram_settings` (array plano leído con `wp_parse_args`, autoload activo porque decide los hooks de cada petición; el token va cifrado con AES-256-GCM y las salts), `premiero_telegram_digest_hash` (no autoload). Transients `premiero_telegram_failed_logins`, `premiero_telegram_fatals_sent` y `premiero_telegram_notices`. Cron `premiero_telegram_daily_digest` y `premiero_telegram_failed_logins_summary`. Mu-plugin `00-premiero-telegram-recovery.php`, que el Toolkit crea, actualiza y borra en `admin_init`, al guardar y al desactivar; `Premiero_Telegram::deactivate()` se llama desde `Premiero_Remote_Backups::deactivate()` para no añadir otro hook ni tocar la comunicación con la consola.
 
 **Transients:** `premiero_atk_github_release` (`get_site_transient()`, caché del último release de GitHub con marca `_premiero_error`).
 

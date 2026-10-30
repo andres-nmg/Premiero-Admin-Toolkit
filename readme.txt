@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.8.2
+Stable tag: 3.8.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -22,6 +22,8 @@ La pestaña Monitorización permite emparejar una instalación con Premiero Main
 La pestaña Copias de Seguridad detecta las copias terminadas de UpdraftPlus y las sincroniza por SFTP con cualquier servidor compatible. Las transferencias se verifican por tamaño, se reanudan cuando quedan incompletas y se reintentan automáticamente. Opcionalmente, la retención remota replica los conjuntos conservados por UpdraftPlus sin modificar UpdraftPlus ni Premiero Maintenance Console.
 
 La pestaña Avisos registra los mensajes mostrados por WordPress y otros plugins en la administración. El administrador puede ocultar avisos concretos, restaurarlos posteriormente y consultar su origen, tipo y frecuencia sin aplicar bloqueos automáticos.
+
+La pestaña Telegram envía a un chat avisos de formularios de Contact Form 7 y Elementor Pro, actualizaciones, errores fatales, seguridad y comentarios pendientes. Cada aviso se activa por separado. El plugin no incluye credenciales: el token y el Chat ID se configuran en cada instalación y el token se guarda cifrado. Opcionalmente permite desactivar emails de WordPress que queden duplicados, solo mientras Telegram esté activo, las credenciales sean válidas y los avisos equivalentes estén marcados.
 
 Las actualizaciones estables se distribuyen mediante GitHub Releases desde:
 
@@ -54,7 +56,30 @@ Sí. Premiero escucha la finalización correcta de UpdraftPlus, espera al menos 
 
 Sí. Activa la retención remota en Premiero y configura en UpdraftPlus cuántos conjuntos quieres conservar. Premiero vuelve a subir los archivos remotos que falten y elimina del servidor SFTP los conjuntos que UpdraftPlus retire. Solo se eliminan archivos registrados previamente por Premiero, después de varias comprobaciones y cuando no existen transferencias pendientes.
 
+= ¿Cómo se configuran los avisos por Telegram? =
+
+Crea un bot con @BotFather, escríbele un mensaje y obtén el Chat ID con el método `getUpdates` de la API de Telegram. Introduce el token y el Chat ID en `Premiero > Telegram`, guarda y pulsa Enviar mensaje de prueba. Hasta entonces el módulo no envía nada y los emails de WordPress siguen igual.
+
+= ¿Qué pasa con los emails de WordPress si Telegram falla? =
+
+Con Telegram desactivado, sin credenciales válidas o sin los avisos equivalentes marcados, los emails se envían con normalidad. El email de restablecimiento de contraseña solo se omite para administradores y cuando Telegram confirma la entrega. Si desactivas el email de una actualización automática o de un comentario y un envío concreto a Telegram falla, ese email no se recupera. El email del modo de recuperación y los de los formularios no se pueden desactivar.
+
+= ¿Por qué aparece un mu-plugin de Telegram? =
+
+Es `00-premiero-telegram-recovery.php`. Lo crea el Toolkit para que los avisos de errores fatales funcionen aunque el error ocurra antes de cargarlo, y se elimina al desactivar el Toolkit o los dos avisos de errores fatales. No hay que editarlo. Si la carpeta `mu-plugins` no admite escritura, la pestaña lo indica y esos errores tempranos no se avisan.
+
+= ¿Se avisa de cualquier error fatal? =
+
+No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y limita ese email a uno al día por defecto. El aviso va ligado a ese email y no funciona en multisite. Fuera del admin se avisa de cualquier fatal que ocurra después de cargar los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
+
 == Changelog ==
+
+= 3.8.3 =
+
+* Nueva pestaña Telegram con avisos de Contact Form 7, Elementor Pro, actualizaciones, errores fatales, seguridad y comentarios pendientes, cada uno con su propia casilla.
+* El plugin no incluye credenciales: el token y el Chat ID se configuran en cada instalación. El token se guarda cifrado y no vuelve a mostrarse. Opcionalmente se pueden definir con `PRM_TG_TOKEN` y `PRM_TG_CHAT_ID` en `wp-config.php`.
+* Un mu-plugin gestionado por el Toolkit avisa también de los errores fatales que ocurren antes de cargarlo. Los fatales fuera del admin se avisan sin enlace de recuperación, como máximo una vez por hora para cada error.
+* Permite desactivar emails duplicados de WordPress, solo con Telegram activo, credenciales válidas y los avisos equivalentes marcados. El email de restablecimiento de contraseña solo se omite para administradores y con la entrega confirmada. El email de recuperación y los de formularios no se pueden desactivar.
 
 = 3.8.2 =
 

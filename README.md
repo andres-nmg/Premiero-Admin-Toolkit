@@ -14,6 +14,7 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 - Monitorización saliente y ejecución por polling de un catálogo cerrado de copias, exclusiones y actualizaciones firmado por la consola privada.
 - Sincronización automática por SFTP de los backups de UpdraftPlus con cualquier servidor compatible.
 - Registro y ocultación reversible de avisos del administrador de WordPress.
+- Avisos por Telegram configurables por instalación, con token cifrado y aviso de errores fatales, y desactivación opcional de emails duplicados de WordPress.
 - Integración de StifLi Flex MCP como pestaña «Servidor MCP», con su panel de administración completo embebido en el Toolkit.
 - Actualizaciones desde las Releases de este repositorio.
 
@@ -59,6 +60,21 @@ Si un sitio tiene instalado TecnoDerecho Admin Toolkit:
 2. Pulsa **Activar** en Premiero Admin Toolkit.
 3. Premiero desactivará TecnoDerecho y migrará automáticamente las opciones compartidas, la identidad, el logo y el MU-plugin de snippets.
 4. Espera al aviso de migración correcta antes de eliminar el plugin TecnoDerecho antiguo.
+
+## Avisos por Telegram
+
+1. Crea un bot con [@BotFather](https://t.me/BotFather) y guarda su token.
+2. Escribe un mensaje al bot y abre `https://api.telegram.org/bot<TOKEN>/getUpdates` para obtener el Chat ID, que aparece en `chat.id`. No compartas esa URL: contiene el token.
+3. En `Premiero > Telegram`, introduce el token y el Chat ID, guarda y pulsa **Enviar mensaje de prueba**.
+4. Marca los avisos que quieras recibir.
+
+El plugin no incluye credenciales, porque este repositorio es público. El token se guarda cifrado con las salts de WordPress y no vuelve a mostrarse; si cambian las salts, por ejemplo al migrar la web, hay que escribirlo de nuevo. También se pueden definir `PRM_TG_TOKEN` y `PRM_TG_CHAT_ID` en `wp-config.php`, que tienen prioridad sobre lo guardado.
+
+Los emails duplicados de WordPress solo se desactivan si la casilla está marcada, Telegram está activo, las credenciales son válidas y los avisos equivalentes están marcados. Si falta algo, el email se envía. El email de restablecimiento de contraseña solo se omite para administradores y cuando Telegram confirma la entrega. El email del modo de recuperación y los de los formularios no se pueden desactivar.
+
+Para avisar de errores que ocurren antes de cargar el Toolkit, este crea el mu-plugin `00-premiero-telegram-recovery.php` y lo elimina al desactivarse. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y por defecto limita ese email a uno al día; el aviso va ligado a él y no funciona en multisite. Fuera del admin se avisa de cualquier fatal posterior a la carga de los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
+
+Los ajustes se conservan al desactivar el plugin y, como no hay `uninstall.php`, también al eliminarlo.
 
 ## Publicación de versiones
 
