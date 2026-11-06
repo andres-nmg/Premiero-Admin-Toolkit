@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.8.3
+Stable tag: 3.8.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -73,6 +73,14 @@ Es `00-premiero-telegram-recovery.php`. Lo crea el Toolkit para que los avisos d
 No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y limita ese email a uno al día por defecto. El aviso va ligado a ese email y no funciona en multisite. Fuera del admin se avisa de cualquier fatal que ocurra después de cargar los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
 
 == Changelog ==
+
+= 3.8.4 =
+
+* Eliminada la pestaña y el submenú «Servidor MCP». StifLi Flex MCP deja de ir incluido en el Toolkit y ya no se instala ni se activa automáticamente.
+* En las webs donde Flex MCP ya estaba instalado, el plugin se conserva y vuelve a mostrar su propio menú de administración.
+* Repositorio: StifLi Flex MCP pasa de los paquetes locales al catálogo de WordPress.org.
+* Repositorio: añadidos Easy MCP AI y Greenshift al catálogo de plugins de WordPress.org, y el tema GreenShift al de temas.
+* Repositorio: retirado reSmush.it del catálogo.
 
 = 3.8.3 =
 
