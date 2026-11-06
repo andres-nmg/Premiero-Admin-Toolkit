@@ -1836,6 +1836,42 @@ final class Premiero_Console_Client {
 	 *
 	 * @return string
 	 */
+	/**
+	 * Estado de la conexión en solo lectura (lo usa la ability MCP de
+	 * monitorización). Nunca incluye el secreto.
+	 *
+	 * @return array
+	 */
+	public static function status_summary() {
+		$enabled                = (bool) get_option( self::OPT_ENABLED, false );
+		$api_base               = self::get_api_base();
+		$remote_installation_id = sanitize_text_field( (string) get_option( self::OPT_REMOTE_INSTALLATION_ID, '' ) );
+		$key_id                 = sanitize_text_field( (string) get_option( self::OPT_KEY_ID, '' ) );
+		$secret                 = self::get_secret();
+		$secret_ok              = ! is_wp_error( $secret ) && '' !== $secret;
+		$last_sent              = (int) get_option( self::OPT_LAST_SENT, 0 );
+		$next_attempt           = (int) get_option( self::OPT_NEXT_ATTEMPT, 0 );
+		$next_sync              = wp_next_scheduled( self::CRON_SYNC );
+		$last_error             = get_option( self::OPT_LAST_ERROR, array() );
+		$size_cache             = get_option( self::OPT_SIZE_CACHE, array() );
+
+		return array(
+			'connected'              => $enabled && $api_base && self::is_uuid( $remote_installation_id ) && self::is_uuid( $key_id ) && $secret_ok,
+			'enabled'                => $enabled,
+			'secret_readable'        => $secret_ok,
+			'api_base'               => $api_base,
+			'installation_id'        => (string) get_option( self::OPT_INSTALLATION_ID, '' ),
+			'remote_installation_id' => $remote_installation_id,
+			'last_sent'              => $last_sent ? gmdate( 'c', $last_sent ) : null,
+			'last_http_code'         => (int) get_option( self::OPT_LAST_HTTP, 0 ),
+			'last_error'             => is_array( $last_error ) ? $last_error : (string) $last_error,
+			'failures'               => (int) get_option( self::OPT_FAILURES, 0 ),
+			'next_attempt'           => $next_attempt ? gmdate( 'c', $next_attempt ) : null,
+			'next_sync'              => $next_sync ? gmdate( 'c', (int) $next_sync ) : null,
+			'sizes'                  => is_array( $size_cache ) ? $size_cache : array(),
+		);
+	}
+
 	private static function get_api_base() {
 		$from_constant = defined( 'PREMIERO_CONSOLE_API_BASE' );
 		$value         = $from_constant

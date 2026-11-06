@@ -1,42 +1,64 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.8.4`
-- **Etiqueta:** `v3.8.4`
-- **Título de la Release:** `Premiero Admin Toolkit 3.8.4`
+- **Versión:** `3.8.5`
+- **Etiqueta:** `v3.8.5`
+- **Título de la Release:** `Premiero Admin Toolkit 3.8.5`
 - **Asset generado:** `premiero-admin-toolkit.zip`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.8.4
+## Premiero Admin Toolkit 3.8.5
 
-Retira el Servidor MCP integrado y actualiza el catálogo del Repositorio.
+Expone las funciones del Toolkit como herramientas MCP mediante la Abilities
+API de WordPress 6.9.
 
 ### Cambios principales
 
-- Eliminada la pestaña y el submenú **Servidor MCP**. StifLi Flex MCP deja de
-  ir incluido en el Toolkit y ya no se instala ni se activa automáticamente.
-- **Repositorio > Locales:** retirado «Servidor MCP (Flex MCP)».
-- **Repositorio > WordPress.org (plugins):** añadidos StifLi Flex MCP,
-  Easy MCP AI y Greenshift; retirado reSmush.it.
-- **Repositorio > WordPress.org (temas):** añadido GreenShift.
+- 14 abilities en la categoría `premiero`. Easy MCP AI las publica como
+  `wp_ability_premiero_<nombre>` una vez marcadas en sus ajustes.
+- **Telegram:** `telegram-status` y `telegram-send`.
+- **Código:** `code-get` y `code-update`. Por defecto añade el código al final;
+  también sustituye un fragmento exacto o reemplaza el bloque. El PHP se valida
+  antes de guardarse y se conserva la copia `.bak` del MU-plugin.
+- **Monitorización:** `monitoring-status`, solo lectura.
+- **Diagnóstico:** `diagnostics-list`, `diagnostics-run`, `diagnostics-repair`
+  (con vista previa) y `php-run` (consola PHP personalizada). Todo queda en el
+  historial marcado como «(MCP)».
+- **Web y SEO:** `http-check` (redirecciones, tiempos y certificado SSL, con
+  protección SSRF), `verify-page`, `seo-head` y `seo-update` (Rank Math o Yoast).
+- **Redirecciones:** `redirect-manage` con el plugin Redirection o, si no está
+  activo, con almacenamiento propio aplicado en `template_redirect`.
 
 ### Después de actualizar
 
-- En las webs donde Flex MCP ya estaba instalado, el plugin no se desinstala:
-  sigue activo y vuelve a mostrar su propio menú de administración. Si no se
-  necesita, puede desactivarse y eliminarse desde **Plugins**.
-- Las webs que tengan reSmush.it instalado lo conservan; solo desaparece del
-  catálogo del Repositorio.
+- Las herramientas solo aparecen con WordPress 6.9 o posterior y un plugin MCP
+  que exponga la Abilities API. En Easy MCP AI hay que marcarlas en sus ajustes.
+- Las de diagnóstico requieren el modo diagnóstico activo.
+- La consola PHP y las reparaciones requieren además el nuevo interruptor
+  **Premiero > Acerca de > Permitir consola PHP y reparaciones por MCP**,
+  apagado por defecto.
+
+### Limitaciones conocidas
+
+- Probado con Yoast SEO, Rank Math y Redirection 5.10.1.
+- Rank Math no genera salida en el frontend hasta completar su asistente
+  (conectar la cuenta u omitir el registro); `seo-head` lo indica.
+- Rank Math solo publica `og:image` si la imagen está en la biblioteca de
+  medios; con una URL externa `seo-update` la guarda y devuelve un aviso.
+- Si Redirection está activo pero sin su asistente completado (sin tablas),
+  `redirect-manage` devuelve un error en lugar de usar el almacenamiento propio.
+- `verify-page` y `seo-head` analizan el HTML servido, así que reflejan la caché
+  de página si la hay.
 
 ### Compatibilidad
 
-- Sin cambios de requisitos. Requiere WordPress 5.8 o posterior y PHP 7.4 o
-  posterior.
+- Requiere WordPress 5.8 o posterior y PHP 7.4 o posterior. Las herramientas MCP
+  necesitan WordPress 6.9 o posterior; en versiones anteriores no se registran.
 
 ### Publicación
 
-1. Confirma que `Version`, `PREMIERO_ATK_VER` y `Stable tag` indican `3.8.4`.
-2. Crea y publica la etiqueta `v3.8.4`.
+1. Confirma que `Version`, `PREMIERO_ATK_VER` y `Stable tag` indican `3.8.5`.
+2. Crea y publica la etiqueta `v3.8.5`.
 3. GitHub Actions generará y adjuntará automáticamente el archivo
    `premiero-admin-toolkit.zip`.
 4. No adjuntes el ZIP versionado local con otro nombre: el actualizador del
