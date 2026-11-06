@@ -15,7 +15,6 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 - Sincronización automática por SFTP de los backups de UpdraftPlus con cualquier servidor compatible.
 - Registro y ocultación reversible de avisos del administrador de WordPress.
 - Avisos por Telegram configurables por instalación, con token cifrado y aviso de errores fatales, y desactivación opcional de emails duplicados de WordPress.
-- Integración de StifLi Flex MCP como pestaña «Servidor MCP», con su panel de administración completo embebido en el Toolkit.
 - Actualizaciones desde las Releases de este repositorio.
 
 ## Requisitos

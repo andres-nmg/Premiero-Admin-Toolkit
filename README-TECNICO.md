@@ -1,6 +1,6 @@
 # Documentación Técnica: Premiero Admin Toolkit (`premiero-admin-toolkit`)
 
-> Versión analizada: **3.8.3** · `Requires PHP: 7.4` · Text domain `premiero-admin` · Constante global `PREMIERO_ATK_*`.
+> Versión analizada: **3.8.4** · `Requires PHP: 7.4` · Text domain `premiero-admin` · Constante global `PREMIERO_ATK_*`.
 > Plugin de código mayoritariamente **procedimental** (funciones globales) + **8 clases `final` estáticas** en `includes/`. Es el cliente del ecosistema Premiero (Consola de Mantenimientos).
 
 ## 1. Propósito y Lógica de Negocio
@@ -17,7 +17,7 @@ Concentra en una sola pestaña de `wp-admin` (slug `premiero-admin`) todo el man
 
 - **CPTs / taxonomías:** ninguno.
 - **Tabla personalizada:** `{prefix}premiero_backup_sync_queue` (`Premiero_Backup_Sync_Queue`, DB_VERSION 2).
-- **Pestañas del admin** (`premiero_tabs_nav()`): `info`, `menuwp`, `notices`, `telegram`, `code`, `remote-backups`, `repository`, `adminui`, `branding`, `appearance`, `monitoring`, `mcp` y `diagnostic` (condicional).
+- **Pestañas del admin** (`premiero_tabs_nav()`): `info`, `menuwp`, `notices`, `telegram`, `code`, `remote-backups`, `repository`, `adminui`, `branding`, `appearance`, `monitoring` y `diagnostic` (condicional).
 
 ### Flujo del módulo de backups remotos
 
@@ -49,7 +49,6 @@ premiero-admin-toolkit/
 │   ├── class-premiero-admin-notices.php         # Registro/captura de avisos de admin
 │   ├── class-premiero-diagnostics.php           # AJAX de diagnóstico, log temporal, historial
 │   ├── class-premiero-diagnostics-ui.php        # UI de la pestaña Diagnóstico
-│   ├── premiero-flex-mcp-integration.php        # Integración de StifLi Flex MCP como pestaña «Servidor MCP»
 │   ├── telegram/
 │   │   ├── class-premiero-telegram.php              # Ajustes, credenciales cifradas, reglas de emails, mu-plugin
 │   │   ├── class-premiero-telegram-sender.php       # Envío a la API de Telegram (escape, truncado, sin token en errores)

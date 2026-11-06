@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.8.3
+ * Version:     3.8.4
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.8.3');
+define('PREMIERO_ATK_VER', '3.8.4');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_FILE', __FILE__);
@@ -104,7 +104,6 @@ require_once PREMIERO_ATK_DIR . 'includes/class-premiero-diagnostics.php';
 Premiero_Diagnostics::init();
 
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-diagnostics-ui.php';
-require_once PREMIERO_ATK_DIR . 'includes/premiero-flex-mcp-integration.php';
 
 $premiero_composer_autoload = PREMIERO_ATK_DIR . 'vendor/autoload.php';
 if ( file_exists( $premiero_composer_autoload ) ) {
@@ -364,8 +363,10 @@ class Premiero_Admin_Toolkit_Repository {
             [ 'name' => 'Advanced Custom Fields',    'url' => 'https://es.wordpress.org/plugins/advanced-custom-fields/' ],
             [ 'name' => 'Joinchat (WhatsApp)',       'url' => 'https://es.wordpress.org/plugins/creame-whatsapp-me/' ],
             [ 'name' => 'Template Kit Import',       'url' => 'https://es.wordpress.org/plugins/template-kit-import/' ],
-            [ 'name' => 'reSmush.it',                'url' => 'https://es.wordpress.org/plugins/resmushit-image-optimizer/' ],
             [ 'name' => 'Wordfence Security',        'url' => 'https://es.wordpress.org/plugins/wordfence/' ],
+            [ 'name' => 'StifLi Flex MCP',           'url' => 'https://es.wordpress.org/plugins/stifli-flex-mcp/' ],
+            [ 'name' => 'Easy MCP AI',               'url' => 'https://wordpress.org/plugins/easy-mcp-ai/' ],
+            [ 'name' => 'Greenshift',                'url' => 'https://es.wordpress.org/plugins/greenshift-animation-and-page-builder-blocks/' ],
         ];
     }
 
@@ -373,6 +374,7 @@ class Premiero_Admin_Toolkit_Repository {
     protected function get_wporg_themes_catalog() {
         return [
             [ 'name' => 'Hello Elementor', 'slug' => 'hello-elementor' ],
+            [ 'name' => 'GreenShift',      'slug' => 'greenshift' ],
         ];
     }
 
@@ -381,7 +383,6 @@ class Premiero_Admin_Toolkit_Repository {
         return [
             'all-in-one-wp-migration-with-import-master.zip' => 'Importador / Exportador',
             'pro-elements.zip'                               => 'Pro Elements',
-            'stifli-flex-mcp.zip'                            => 'Servidor MCP (Flex MCP)',
         ];
     }
 
@@ -420,7 +421,6 @@ class Premiero_Admin_Toolkit_Repository {
         $map = [
             'all-in-one-wp-migration-with-import-master.zip' => 'all-in-one-wp-migration-with-import-master',
             'pro-elements.zip'                               => 'pro-elements',
-            'stifli-flex-mcp.zip'                            => 'stifli-flex-mcp',
         ];
         return $map[$filename] ?? '';
     }
@@ -1240,7 +1240,6 @@ add_action('admin_menu', function() {
         81
     );
     add_submenu_page(PREMIERO_ATK_SLUG,'Ajustes','Ajustes','manage_options',PREMIERO_ATK_SLUG,'premiero_render_settings_page');
-    add_submenu_page(PREMIERO_ATK_SLUG,'Servidor MCP','Servidor MCP','manage_options', PREMIERO_ATK_SLUG . '-mcp', 'premiero_render_mcp_submenu');
 }, 20);
 
 /* ====================== Registrar opciones ====================== */
@@ -1416,7 +1415,6 @@ function premiero_admin_header($active_tab = 'info') {
         'code'       => ['Código', 'Gestiona PHP, HTML y CSS personalizado desde un único lugar.'],
         'menuwp'     => ['Menú', 'Agrupa y renombra elementos del menú de administración.'],
         'repository' => ['Repositorio', 'Instala plugins y temas locales o desde WordPress.org.'],
-        'mcp'        => ['Servidor MCP', 'Servidor MCP (Flex MCP) con todos sus módulos y herramientas.'],
         'adminui'    => ['Login', 'Personaliza la pantalla de acceso y su crédito.'],
         'branding'   => ['Identidad', 'Adapta el nombre y el logo del plugin para un cliente.'],
         'appearance' => ['Apariencia', 'Personaliza colores, tipografía y modo oscuro del administrador.'],
@@ -1457,7 +1455,6 @@ function premiero_tabs_nav($active) {
         'code'       => 'Código',
         'remote-backups' => 'Copias de Seguridad',
         'repository' => 'Repositorio',
-        'mcp'        => 'Servidor MCP',
         'adminui'    => 'Login',
         'branding'   => 'Identidad',
         'appearance' => 'Apariencia',
@@ -2431,10 +2428,6 @@ function premiero_render_settings_page() {
 
         case 'repository':
             premiero_render_repository();
-        break;
-
-        case 'mcp':
-            premiero_render_embedded_mcp();
         break;
 
         case 'monitoring':
