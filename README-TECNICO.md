@@ -1,6 +1,6 @@
 # Documentación Técnica: Premiero Admin Toolkit (`premiero-admin-toolkit`)
 
-> Versión analizada: **3.8.4** · `Requires PHP: 7.4` · Text domain `premiero-admin` · Constante global `PREMIERO_ATK_*`.
+> Versión analizada: **3.8.5** · `Requires PHP: 7.4` · Text domain `premiero-admin` · Constante global `PREMIERO_ATK_*`.
 > Plugin de código mayoritariamente **procedimental** (funciones globales) + **8 clases `final` estáticas** en `includes/`. Es el cliente del ecosistema Premiero (Consola de Mantenimientos).
 
 ## 1. Propósito y Lógica de Negocio
@@ -14,6 +14,7 @@ Concentra en una sola pestaña de `wp-admin` (slug `premiero-admin`) todo el man
 5. **Backups SFTP a Hetzner Storage Box (núcleo del módulo `remote-backups`):** detecta los archivos de UpdraftPlus Free **sin tocar su historial**, los encola en una tabla propia, los sube por SFTP con reanudación y verificación de tamaño, y aplica retención espejo de la de UpdraftPlus.
 6. **Consola de Mantenimientos (telemetría + comandos):** envía instantáneas firmadas (protocolo **PMC1**) al endpoint `/wp-json/premiero-console/v1/telemetry` y ejecuta por *polling* comandos remotos (`update_plugin`, `run_backup`, `check_backup_status`, `set_exclusion`).
 7. **Diagnóstico:** herramientas de diagnóstico/reparación y captura del registro temporal de PHP vía AJAX (solo si `premiero_diag_enabled`).
+8. **Abilities MCP (`includes/abilities.php`):** registra en la Abilities API del núcleo (WP 6.9+) la categoría `premiero` y 14 abilities (`premiero/telegram-status`, `premiero/telegram-send`, `premiero/code-get`, `premiero/code-update`, `premiero/monitoring-status`, `premiero/diagnostics-list`, `premiero/diagnostics-run`, `premiero/diagnostics-repair`, `premiero/php-run`, `premiero/http-check`, `premiero/verify-page`, `premiero/seo-head`, `premiero/seo-update` y `premiero/redirect-manage`). Plugins como Easy MCP AI las publican como herramientas `wp_ability_premiero_*`.
 
 - **CPTs / taxonomías:** ninguno.
 - **Tabla personalizada:** `{prefix}premiero_backup_sync_queue` (`Premiero_Backup_Sync_Queue`, DB_VERSION 2).
@@ -49,6 +50,11 @@ premiero-admin-toolkit/
 │   ├── class-premiero-admin-notices.php         # Registro/captura de avisos de admin
 │   ├── class-premiero-diagnostics.php           # AJAX de diagnóstico, log temporal, historial
 │   ├── class-premiero-diagnostics-ui.php        # UI de la pestaña Diagnóstico
+│   ├── abilities.php                            # Premiero_Abilities: categoría, registro y abilities de Telegram, código, monitorización y diagnóstico
+│   ├── abilities/
+│   │   ├── class-premiero-abilities-web.php         # http-check (anti-SSRF), verify-page y seo-head (parser HTML sin dependencias)
+│   │   └── class-premiero-abilities-seo.php         # seo-update con metadatos de Rank Math o Yoast
+│   ├── class-premiero-redirects.php             # redirect-manage + redirecciones propias en template_redirect
 │   ├── telegram/
 │   │   ├── class-premiero-telegram.php              # Ajustes, credenciales cifradas, reglas de emails, mu-plugin
 │   │   ├── class-premiero-telegram-sender.php       # Envío a la API de Telegram (escape, truncado, sin token en errores)
@@ -108,7 +114,7 @@ premiero-admin-toolkit/
 
 **Migración legacy:** `premiero_atk_legacy_migration_pending`, `premiero_atk_legacy_migration_notice` (autoload `true`, valores `0`/`1`).
 
-**Diagnóstico:** `premiero_diag_enabled`, `premiero_diag_history` (máx. 50 entradas, `MAX_HISTORY`), `premiero_diag_temp_log`, `premiero_diag_log_enabled`, `premiero_diag_log_rotated` (fichero en `WP_CONTENT_DIR . '/premiero-debug.log'`, lectura limitada a 2 MiB).
+**Diagnóstico:** `premiero_diag_enabled`, `premiero_diag_mcp_php` (permite la consola PHP y las reparaciones por MCP; apagado por defecto), `premiero_diag_history` (máx. 50 entradas, `MAX_HISTORY`), `premiero_diag_temp_log`, `premiero_diag_log_enabled`, `premiero_diag_log_rotated` (fichero en `WP_CONTENT_DIR . '/premiero-debug.log'`, lectura limitada a 2 MiB).
 
 **Workers/locks:** `premiero_remote_backups_worker_lock` (TTL 2 h), `premiero_console_sync_lock`, `premiero_console_size_lock`, `premiero_console_command_lock`, `premiero_remote_backups_last_reconcile`.
 
@@ -119,6 +125,8 @@ premiero-admin-toolkit/
 **Comandos:** `premiero_console_command_nonces` (índice de nonces), `premiero_console_command_nonce_<sha256>` (opciones individuales, anti-replay), `premiero_console_processed_commands` (máx. 2000), `premiero_console_active_command`, `premiero_console_command_resume` (cron), `premiero_console_update_exclusions` (plugin_file → true), `premiero_console_response_nonces`.
 
 **Telegram:** `premiero_telegram_settings` (array plano leído con `wp_parse_args`, autoload activo porque decide los hooks de cada petición; el token va cifrado con AES-256-GCM y las salts), `premiero_telegram_digest_hash` (no autoload). Transients `premiero_telegram_failed_logins`, `premiero_telegram_fatals_sent` y `premiero_telegram_notices`. Cron `premiero_telegram_daily_digest` y `premiero_telegram_failed_logins_summary`. Mu-plugin `00-premiero-telegram-recovery.php`, que el Toolkit crea, actualiza y borra en `admin_init`, al guardar y al desactivar; `Premiero_Telegram::deactivate()` se llama desde `Premiero_Remote_Backups::deactivate()` para no añadir otro hook ni tocar la comunicación con la consola.
+
+**Redirecciones:** `premiero_redirects` (autoload; lista de `id`, `source` como ruta normalizada sin barra final, `target`, `code` 301/302, `created`). Solo se usa si Redirection no está activo; las existentes se siguen aplicando aunque se active después.
 
 **Transients:** `premiero_atk_github_release` (`get_site_transient()`, caché del último release de GitHub con marca `_premiero_error`).
 
@@ -154,6 +162,16 @@ premiero-admin-toolkit/
 - Rutas canónicas firmadas: `/wp-json/premiero-console/v1/telemetry`, `/commands/poll`, `/commands/report`.
 - Firma **PMC1**: `hash('sha256', implode("\n", [SIGNATURE_VERSION, 'POST', $canonical_path, $installation_id, $key_id, $timestamp, $request_nonce, sha256($body)]))` con HMAC del `premiero_console_secret`; las respuestas se validan igual con `'RESPONSE'` y `hash_equals()` (ver `signed_command_request()`).
 - Emparejamiento en dos fases (`pair` → `installation_id` local + `remote_installation_id`).
+
+### Abilities API (`Premiero_Abilities`)
+
+- Hooks: `wp_abilities_api_categories_init` (categoría `premiero`) y `wp_abilities_api_init`. Con WordPress anterior a 6.9 no se disparan.
+- Todas usan `permission_callback` = `manage_options`, `meta.show_in_rest = true`, anotaciones `readonly`/`destructive`/`idempotent` e `input_schema`/`output_schema` (la API valida la salida contra el esquema).
+- Los interruptores del Toolkit (modo diagnóstico y `premiero_diag_mcp_php`) se comprueban dentro de la ejecución, no en `permission_callback`, para devolver el motivo concreto: la API sustituye los errores de permisos por un mensaje genérico.
+- `http-check`: resuelve el host antes de cada salto y rechaza IPs privadas, loopback, link-local, CGNAT y reservadas (también IPv6 e IPv4 mapeada). Con transporte cURL fija la IP validada con `CURLOPT_RESOLVE` (anti DNS rebinding). Sigue las redirecciones a mano (máx. 5) y lee el certificado con `stream_socket_client` + `openssl_x509_parse`. Timeout 15 s.
+- `verify-page` y `seo-head`: solo aceptan URLs de `home_url()`/`site_url()` o rutas; analizan el HTML con expresiones regulares. La autoría Rank Math/Yoast se deduce de los comentarios de inicio y fin de bloque de cada plugin (los de Rank Math están traducidos: se reconocen por `rankmath.com` y «Rank Math») y de la clase del `<script>` JSON-LD. El `<title>` y el meta robots salen por los filtros del núcleo (`title-tag`, `wp_robots`), fuera del bloque, y se atribuyen como «núcleo, probablemente filtrado por …». Si Rank Math no está registrado (`Helper::is_invalid_registration()`), no genera salida y el mensaje lo indica.
+- `seo-update`: Yoast (`_yoast_wpseo_*`, vía `WPSEO_Meta::set_value()` si existe, y reconstrucción del indexable con `Indexable_Builder`) y Rank Math (`rank_math_*`, robots como array; solo publica `og:image` desde `rank_math_facebook_image_id`, así que una URL externa devuelve aviso en `warnings`). Con los dos activos escribe en ambos. Probado con Yoast SEO, Rank Math y Redirection 5.10.1.
+- `redirect-manage`: si Redirection está activo pero sin tablas (asistente sin completar) devuelve error. Con Redirection configurado usa `Red_Item::create()`, `Red_Item::get_by_id()->delete()` y lee la tabla `{prefix}redirection_items`; si no, `premiero_redirects` + `template_redirect` (prio 1, `wp_redirect` con `X-Redirect-By: Premiero Admin Toolkit`).
 
 ### AJAX registrado (solo `admin`)
 
@@ -251,6 +269,13 @@ Validaciones: `wp_is_uuid($id)`, acción en lista blanca, nonce de 48 hex, `expi
 | `…::status()` / `recent_success($max_age_hours)` | `$max_age_hours` | Normaliza `updraft_last_backup` y exige copia completa y reciente |
 | `…::start()` | — | Lanza copia completa con `do_action('updraft_backupnow_backup_all')` |
 | `Premiero_Diagnostics::init()` | — | Herramientas de diagnóstico, log temporal de PHP e historial |
+| `…::run_php($code, $origin)` | código PHP | Ejecuta la consola PHP personalizada y la anota en el historial; la usan el AJAX y la ability `premiero/php-run` |
+| `…::is_mcp_php_enabled()` | — | Modo diagnóstico activo + `premiero_diag_mcp_php` |
+| `Premiero_Console_Client::status_summary()` | — | Estado de la conexión en solo lectura (sin secreto) para `premiero/monitoring-status` |
+| `Premiero_Abilities::init()` / `add($name, $args)` | nombre + args | Registro común de abilities (categoría, permisos, `show_in_rest`) |
+| `Premiero_Abilities_Web::http_check()` / `verify_page()` / `seo_head()` | input | Abilities web de solo lectura |
+| `Premiero_Abilities_Seo::execute($input)` | input | `premiero/seo-update` |
+| `Premiero_Redirects::init()` / `apply()` / `execute($input)` | input | Redirecciones propias y `premiero/redirect-manage` |
 ### Módulo `remote-backups/`
 
 | Clase/Función | Parámetros Clave | Descripción Técnica |

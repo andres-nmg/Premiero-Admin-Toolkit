@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.8.4
+ * Version:     3.8.5
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -36,7 +36,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.8.4');
+define('PREMIERO_ATK_VER', '3.8.5');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_FILE', __FILE__);
@@ -104,6 +104,7 @@ require_once PREMIERO_ATK_DIR . 'includes/class-premiero-diagnostics.php';
 Premiero_Diagnostics::init();
 
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-diagnostics-ui.php';
+require_once PREMIERO_ATK_DIR . 'includes/abilities.php';
 
 $premiero_composer_autoload = PREMIERO_ATK_DIR . 'vendor/autoload.php';
 if ( file_exists( $premiero_composer_autoload ) ) {
@@ -1942,6 +1943,7 @@ function premiero_render_settings_page() {
     /* Guardado modo diagnóstico (Acerca de) */
     if ( 'info' === $active && isset($_POST['premiero_diag_submit']) && check_admin_referer('premiero_diag_nonce') ) {
         update_option( PREMIERO_OPT_DIAG_ENABLED, isset($_POST[PREMIERO_OPT_DIAG_ENABLED]) ? 1 : 0 );
+        update_option( Premiero_Diagnostics::OPT_MCP_PHP, isset($_POST[Premiero_Diagnostics::OPT_MCP_PHP]) ? 1 : 0 );
         echo '<div class="notice notice-success is-dismissible"><p>Modo diagnóstico actualizado.</p></div>';
     }
 
@@ -2050,6 +2052,13 @@ function premiero_render_settings_page() {
                                 </label>
                             </p>
                             <p class="description">Permite ejecutar comprobaciones avanzadas y herramientas de reparación sobre esta instalación de WordPress. Algunas acciones pueden modificar archivos o datos. Actívalo únicamente si sabes lo que estás haciendo.</p>
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="<?php echo esc_attr(Premiero_Diagnostics::OPT_MCP_PHP); ?>" value="1" <?php checked( (bool) get_option( Premiero_Diagnostics::OPT_MCP_PHP, false ) ); ?>>
+                                    Permitir consola PHP y reparaciones por MCP
+                                </label>
+                            </p>
+                            <p class="description">Las herramientas MCP podrán ejecutar código PHP arbitrario y aplicar reparaciones en esta web. Requiere el modo diagnóstico activado. Déjalo apagado salvo cuando lo necesites.</p>
                             <?php submit_button('Guardar', 'secondary', 'premiero_diag_submit'); ?>
                         </form>
                     </section>

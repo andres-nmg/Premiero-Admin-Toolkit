@@ -17,6 +17,7 @@ final class Premiero_Diagnostics {
 	const OPT_ENABLED        = 'premiero_diag_enabled';
 	const OPT_HISTORY        = 'premiero_diag_history';
 	const OPT_TEMP_LOG       = 'premiero_diag_temp_log';
+	const OPT_MCP_PHP        = 'premiero_diag_mcp_php';
 	const NONCE_ACTION       = 'premiero_diag_action';
 	const AJAX_RUN_DIAG      = 'premiero_diag_run';
 	const AJAX_RUN_REPAIR    = 'premiero_diag_repair';
@@ -54,6 +55,14 @@ final class Premiero_Diagnostics {
 	/**
 	 * Preferencia del usuario para el registro temporal de errores.
 	 */
+	/**
+	 * La consola PHP y las reparaciones solo se exponen por MCP con el
+	 * diagnóstico activo y su interruptor propio marcado (apagado por defecto).
+	 */
+	public static function is_mcp_php_enabled() {
+		return self::is_enabled() && (bool) get_option( self::OPT_MCP_PHP, false );
+	}
+
 	public static function is_temp_log_enabled() {
 		return (bool) get_option( self::OPT_TEMP_LOG, false );
 	}
@@ -1492,7 +1501,27 @@ final class Premiero_Diagnostics {
 		if ( '' === trim( $code ) ) {
 			wp_send_json_error( array( 'message' => 'No hay código que ejecutar.' ) );
 		}
-		$code = preg_replace( '/^\s*<\?php\s*/i', '', $code );
+		$run = self::run_php( $code );
+
+		wp_send_json_success( array(
+			'html'        => self::render_php_html( $run['output'] ),
+			'status'      => 'info',
+			'history'     => $run['history'],
+			'action_line' => self::report_action_line( $run['history'] ),
+		) );
+	}
+
+	/**
+	 * Ejecuta código en la consola PHP personalizada y lo registra en el historial.
+	 * Lo usan la pestaña Diagnóstico (AJAX) y la ability MCP. Los permisos y la
+	 * confirmación se comprueban en cada llamador.
+	 *
+	 * @param string $code   Código PHP, con o sin etiqueta de apertura.
+	 * @param string $origin Texto añadido al historial para identificar el origen.
+	 * @return array{output:string,has_error:bool,history:array}
+	 */
+	public static function run_php( $code, $origin = '' ) {
+		$code = preg_replace( '/^\s*<\?php\s*/i', '', (string) $code );
 		$code = preg_replace( '/^\s*<\?\s*/', '', $code );
 		$code = preg_replace( '/\?>\s*$/', '', $code );
 
@@ -1519,17 +1548,16 @@ final class Premiero_Diagnostics {
 			'tool'    => 'Consola PHP',
 			'type'    => 'php',
 			'status'  => $has_error ? 'problem' : 'ok',
-			'summary' => 'Consola PHP personalizada ejecutada — ' . ( $has_error ? 'ERROR' : 'OK' ),
-			'changes' => 'Consola PHP personalizada ejecutada',
+			'summary' => 'Consola PHP personalizada ejecutada' . $origin . ' — ' . ( $has_error ? 'ERROR' : 'OK' ),
+			'changes' => 'Consola PHP personalizada ejecutada' . $origin,
 			'target'  => 'Consola PHP personalizada',
 		) );
 
-		wp_send_json_success( array(
-			'html'        => self::render_php_html( $output ),
-			'status'      => 'info',
-			'history'     => $entry,
-			'action_line' => self::report_action_line( $entry ),
-		) );
+		return array(
+			'output'    => $output,
+			'has_error' => $has_error,
+			'history'   => $entry,
+		);
 	}
 
 	public static function ajax_clear_history() {

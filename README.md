@@ -15,12 +15,37 @@ Plugin de código abierto para centralizar tareas habituales de administración 
 - Sincronización automática por SFTP de los backups de UpdraftPlus con cualquier servidor compatible.
 - Registro y ocultación reversible de avisos del administrador de WordPress.
 - Avisos por Telegram configurables por instalación, con token cifrado y aviso de errores fatales, y desactivación opcional de emails duplicados de WordPress.
+- Herramientas MCP mediante la Abilities API de WordPress (6.9 o posterior): avisos de Telegram, código personalizado, monitorización, diagnóstico, consola PHP, comprobaciones HTTP, verificación de páginas, SEO (Rank Math o Yoast) y redirecciones.
 - Actualizaciones desde las Releases de este repositorio.
+
+## Herramientas MCP (Abilities API)
+
+Con WordPress 6.9 o posterior, el Toolkit registra sus funciones como abilities de la categoría `premiero`. Cualquier plugin que exponga la Abilities API por MCP las convierte en herramientas; Easy MCP AI las publica como `wp_ability_premiero_<nombre>` una vez marcadas en sus ajustes.
+
+| Ability | Tipo | Qué hace |
+|---|---|---|
+| `premiero/telegram-status` | lectura | Estado de los avisos de Telegram (sin token) |
+| `premiero/telegram-send` | escritura | Envía un mensaje al chat de Telegram de la web |
+| `premiero/code-get` | lectura | Snippets PHP, HTML de `head` y `body` y CSS |
+| `premiero/code-update` | escritura | Añade código (por defecto), sustituye un fragmento o reemplaza un bloque |
+| `premiero/monitoring-status` | lectura | Estado de la conexión con la consola de mantenimiento |
+| `premiero/diagnostics-list` | lectura | Herramientas de diagnóstico disponibles e historial |
+| `premiero/diagnostics-run` | lectura | Ejecuta una comprobación de diagnóstico |
+| `premiero/diagnostics-repair` | escritura | Reparaciones con vista previa (rewrite, cron, transients) |
+| `premiero/php-run` | escritura | Ejecuta código en la consola PHP personalizada |
+| `premiero/http-check` | lectura | Estado, cabeceras, redirecciones, tiempos y certificado SSL de una URL |
+| `premiero/verify-page` | lectura | Title, description, canonical, robots, hreflang, H1 y textos esperados de una página del sitio |
+| `premiero/seo-head` | lectura | Etiquetas SEO y JSON-LD servidos, indicando si vienen de Rank Math o Yoast |
+| `premiero/seo-update` | escritura | Escribe el SEO de un post con Rank Math o Yoast |
+| `premiero/redirect-manage` | escritura | Lista, crea y borra redirecciones 301/302 (Redirection o almacenamiento propio) |
+
+Todas exigen la capacidad `manage_options`. Las de diagnóstico necesitan el modo diagnóstico activo; la consola PHP y las reparaciones necesitan además el interruptor «Permitir consola PHP y reparaciones por MCP» de `Premiero > Acerca de`, apagado por defecto.
 
 ## Requisitos
 
 - WordPress 5.8 o posterior.
 - PHP 7.4 o posterior.
+- WordPress 6.9 o posterior para las herramientas MCP.
 - Permisos de administrador para utilizar las herramientas de instalación.
 
 ## Instalación

@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.8.4
+Stable tag: 3.8.5
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -24,6 +24,8 @@ La pestaña Copias de Seguridad detecta las copias terminadas de UpdraftPlus y l
 La pestaña Avisos registra los mensajes mostrados por WordPress y otros plugins en la administración. El administrador puede ocultar avisos concretos, restaurarlos posteriormente y consultar su origen, tipo y frecuencia sin aplicar bloqueos automáticos.
 
 La pestaña Telegram envía a un chat avisos de formularios de Contact Form 7 y Elementor Pro, actualizaciones, errores fatales, seguridad y comentarios pendientes. Cada aviso se activa por separado. El plugin no incluye credenciales: el token y el Chat ID se configuran en cada instalación y el token se guarda cifrado. Opcionalmente permite desactivar emails de WordPress que queden duplicados, solo mientras Telegram esté activo, las credenciales sean válidas y los avisos equivalentes estén marcados.
+
+Desde WordPress 6.9, el Toolkit expone sus funciones como abilities de la Abilities API (categoría `premiero`): avisos de Telegram, código personalizado, monitorización, diagnóstico, consola PHP, comprobaciones HTTP, verificación de páginas, SEO con Rank Math o Yoast y redirecciones. Los plugins MCP compatibles, como Easy MCP AI, las convierten en herramientas MCP. La consola PHP y las reparaciones solo funcionan por MCP con el modo diagnóstico activo y su interruptor propio marcado.
 
 Las actualizaciones estables se distribuyen mediante GitHub Releases desde:
 
@@ -68,11 +70,32 @@ Con Telegram desactivado, sin credenciales válidas o sin los avisos equivalente
 
 Es `00-premiero-telegram-recovery.php`. Lo crea el Toolkit para que los avisos de errores fatales funcionen aunque el error ocurra antes de cargarlo, y se elimina al desactivar el Toolkit o los dos avisos de errores fatales. No hay que editarlo. Si la carpeta `mu-plugins` no admite escritura, la pestaña lo indica y esos errores tempranos no se avisan.
 
+= ¿Cómo uso las herramientas MCP? =
+
+Necesitas WordPress 6.9 o posterior y un plugin que exponga la Abilities API por MCP. Con Easy MCP AI, marca las abilities `premiero/*` en sus ajustes y aparecerán como `wp_ability_premiero_<nombre>`. Todas exigen un usuario con `manage_options`. Para las de diagnóstico activa el modo diagnóstico en `Premiero > Acerca de`; para la consola PHP y las reparaciones marca además «Permitir consola PHP y reparaciones por MCP».
+
+= ¿Dónde se guardan las redirecciones creadas por MCP? =
+
+Si el plugin Redirection está activo, en Redirection (debe tener su asistente completado). Si no, en la opción `premiero_redirects` del Toolkit, que las aplica con coincidencia exacta de ruta.
+
 = ¿Se avisa de cualquier error fatal? =
 
 No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y limita ese email a uno al día por defecto. El aviso va ligado a ese email y no funciona en multisite. Fuera del admin se avisa de cualquier fatal que ocurra después de cargar los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
 
 == Changelog ==
+
+= 3.8.5 =
+
+* Herramientas MCP mediante la Abilities API de WordPress 6.9: `premiero/telegram-status`, `premiero/telegram-send`, `premiero/code-get`, `premiero/code-update`, `premiero/monitoring-status`, `premiero/diagnostics-list`, `premiero/diagnostics-run`, `premiero/diagnostics-repair`, `premiero/php-run`, `premiero/http-check`, `premiero/verify-page`, `premiero/seo-head`, `premiero/seo-update` y `premiero/redirect-manage`.
+* Telegram: consultar el estado de los avisos y enviar mensajes al chat de la web.
+* Código: leer los snippets PHP, el HTML y el CSS, y escribir código nuevo. Por defecto se añade al final; también se puede sustituir un fragmento exacto o reemplazar el bloque. El PHP se valida antes de guardarse.
+* Monitorización: estado de la conexión con la consola de mantenimiento, sin enviar nada.
+* Diagnóstico: listar y ejecutar las comprobaciones, aplicar reparaciones con vista previa y ejecutar la consola PHP personalizada. Todo queda en el historial marcado como «(MCP)».
+* Nuevo interruptor «Permitir consola PHP y reparaciones por MCP» en `Premiero > Acerca de`, apagado por defecto.
+* Comprobación HTTP de URLs externas con cadena de redirecciones, tiempos y certificado SSL, con protección contra peticiones a IPs privadas, loopback y link-local.
+* Verificación de páginas del propio sitio y lectura de las etiquetas SEO y JSON-LD servidas, indicando si las genera Rank Math o Yoast.
+* Escritura del SEO de un post con Rank Math o Yoast, con valores antes y después y limpieza de la caché SEO del post. Rank Math solo publica og:image si la imagen está en la biblioteca de medios.
+* Gestión de redirecciones 301/302 con el plugin Redirection o, si no está activo, con almacenamiento propio del Toolkit. Se rechazan orígenes de otros dominios y bucles.
 
 = 3.8.4 =
 
