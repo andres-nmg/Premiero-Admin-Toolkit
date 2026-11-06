@@ -164,6 +164,8 @@ final class Premiero_Remote_Backup_Settings {
 		if ( empty( $config['expected_fingerprint'] ) && ! empty( $result['host_key_fingerprint'] ) ) {
 			self::store_fingerprint( $config['host'], $config['port'], $result['host_key_fingerprint'] );
 		}
+		Premiero_Remote_Backups::clear_problem();
+		Premiero_Remote_Backups::schedule_scan_soon( 5 );
 		self::set_notice( 'success', 'SFTP operativo: autenticacion, escritura, verificacion de tamano y limpieza completadas correctamente.' );
 		self::redirect();
 	}
@@ -184,7 +186,9 @@ final class Premiero_Remote_Backup_Settings {
 		$sets           = self::build_backup_sets( $recent, $config );
 		$set_counts     = self::set_counts( $sets );
 		$last_reconcile = get_option( Premiero_Backup_Reconciler::OPT_LAST_REPORT, array() );
+		$problem        = Premiero_Remote_Backups::get_problem();
 		self::render_notice();
+		self::render_health_warnings( $config, $fingerprint, $problem, $last_reconcile, $set_counts );
 		?>
 		<div class="premiero-remote-backups">
 			<header class="premiero-remote-header">
@@ -578,6 +582,36 @@ final class Premiero_Remote_Backup_Settings {
 			<?php endif; ?>
 		</section>
 		<?php
+	}
+
+	/**
+	 * Avisos de estado que antes no se mostraban: clave SSH ausente, conciliacion
+	 * fallida y retencion bloqueada por archivos sin terminar.
+	 */
+	private static function render_health_warnings( $config, $fingerprint, $problem, $last_reconcile, $set_counts ) {
+		if ( empty( $config['enabled'] ) ) {
+			return;
+		}
+		$messages = array();
+		if ( '' === (string) $fingerprint ) {
+			$messages[] = array( 'error', '<strong>No hay clave SSH registrada.</strong> No se sube ni se borra nada hasta que pulses <em>Probar conexion</em> para registrarla.' );
+		} elseif ( ! empty( $problem['message'] ) ) {
+			$messages[] = array(
+				'error',
+				'<strong>La sincronizacion esta detenida</strong> desde ' . esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $problem['since'] ) ) . ': ' . esc_html( $problem['message'] ),
+			);
+		} elseif ( is_array( $last_reconcile ) && ! empty( $last_reconcile['error'] ) ) {
+			$messages[] = array( 'error', '<strong>La ultima comprobacion fallo:</strong> ' . esc_html( $last_reconcile['error'] ) );
+		}
+		if ( is_array( $last_reconcile ) && ! empty( $last_reconcile['blocked_by'] ) && ! empty( $set_counts['retention'] ) ) {
+			$messages[] = array(
+				'warning',
+				'<strong>Retencion en pausa:</strong> hay ' . esc_html( (string) (int) $last_reconcile['blocked_by'] ) . ' archivos pendientes de subir. Las copias retiradas se borraran del servidor cuando terminen. Si llevan tiempo en reintento, pulsa <em>Sincronizar ahora</em>.',
+			);
+		}
+		foreach ( $messages as $message ) {
+			echo '<div class="notice notice-' . esc_attr( $message[0] ) . ' inline" style="margin:14px 0;padding:10px 14px;max-width:920px;"><p style="margin:0;">' . wp_kses( $message[1], array( 'strong' => array(), 'em' => array() ) ) . '</p></div>';
+		}
 	}
 
 	private static function backup_date_label( $backup_id ) {

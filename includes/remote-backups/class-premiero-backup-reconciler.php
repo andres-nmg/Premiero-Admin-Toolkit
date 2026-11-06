@@ -28,7 +28,10 @@ final class Premiero_Backup_Reconciler {
 			'waiting_retention' => 0,
 			'unmanaged_files'   => 0,
 			'unmanaged_sets'    => 0,
+			'blocked_by'        => 0,
+			'released_missing'  => 0,
 			'inventory_checked' => false,
+			'error'             => '',
 			'checked_at'        => time(),
 		);
 		if ( ! Premiero_Remote_Backup_Settings::is_enabled() ) {
@@ -38,11 +41,11 @@ final class Premiero_Backup_Reconciler {
 		Premiero_Backup_Sync_Queue::maybe_install();
 		$retained = Premiero_Backup_Detector::retained_backup_ids();
 		if ( is_wp_error( $retained ) ) {
-			return $summary;
+			return self::fail( $summary, 'retained', 'No se pudo leer el historial de UpdraftPlus: ' . $retained->get_error_message() );
 		}
 		$config = Premiero_Remote_Backup_Settings::runtime_config();
 		if ( is_wp_error( $config ) ) {
-			return $summary;
+			return self::fail( $summary, $config->get_error_code(), $config->get_error_message() );
 		}
 
 		$target_key     = Premiero_Remote_Backup_Settings::target_key( $config );
@@ -85,8 +88,18 @@ final class Premiero_Backup_Reconciler {
 				}
 			}
 
-			$items     = Premiero_Backup_Sync_Queue::retention_items();
+			/*
+			 * Un archivo pendiente o en reintento cuyo original local ya no existe
+			 * nunca podra subirse. Sin este paso seguiria contando como trabajo sin
+			 * terminar y bloquearia la retencion de todas las copias indefinidamente.
+			 */
+			$summary['released_missing'] = self::release_unreachable_items( $directory );
+
+			$items      = Premiero_Backup_Sync_Queue::retention_items();
 			$unfinished = Premiero_Backup_Sync_Queue::has_unfinished_items();
+			if ( $unfinished ) {
+				$summary['blocked_by'] = Premiero_Backup_Sync_Queue::count_unfinished();
+			}
 			$groups    = self::group_items( $items );
 
 			foreach ( $groups as $backup_id => $group ) {
@@ -157,6 +170,16 @@ final class Premiero_Backup_Reconciler {
 				}
 				if ( isset( $retained[ $backup_id ] ) ) {
 					Premiero_Backup_Sync_Queue::clear_group_missing( $backup_id );
+					continue;
+				}
+
+				/*
+				 * Los archivos que nunca llegaron a subirse no tienen nada que borrar
+				 * en el servidor. Se cierran sin tocar el destino y no bloquean el
+				 * resto del conjunto (antes se marcaban como "configuracion anterior").
+				 */
+				$group = self::close_never_uploaded( $group, $summary );
+				if ( empty( $group ) ) {
 					continue;
 				}
 
@@ -248,9 +271,13 @@ final class Premiero_Backup_Reconciler {
 			}
 
 			$opened = self::ensure_client( $client, $config );
-			if ( ! is_wp_error( $opened ) ) {
+			if ( is_wp_error( $opened ) ) {
+				$summary['error'] = 'No se pudo conectar con el servidor SFTP: ' . $opened->get_error_message();
+			} else {
 				$remote_files = $client->list_backup_files( $config['remote_path'] );
-				if ( ! is_wp_error( $remote_files ) ) {
+				if ( is_wp_error( $remote_files ) ) {
+					$summary['error'] = 'No se pudo leer la carpeta remota: ' . $remote_files->get_error_message();
+				} else {
 					$managed = Premiero_Backup_Sync_Queue::managed_filenames( $target_key );
 					$unmanaged_sets = array();
 					foreach ( $remote_files as $remote_filename ) {
@@ -271,11 +298,75 @@ final class Premiero_Backup_Reconciler {
 		}
 
 		update_option( self::OPT_LAST_REPORT, $summary, false );
+		if ( '' !== $summary['error'] ) {
+			Premiero_Remote_Backups::report_problem( 'sftp_connection', $summary['error'] );
+		} else {
+			Premiero_Remote_Backups::clear_problem();
+		}
 
 		if ( $worker_needed ) {
 			Premiero_Remote_Backups::schedule_worker( 5 );
 		}
 		return $summary;
+	}
+
+	/**
+	 * Guarda el informe con el error y avisa. Antes la conciliacion terminaba
+	 * sin guardar nada y la pantalla seguia mostrando el ultimo informe valido.
+	 *
+	 * @param array  $summary Resumen en curso.
+	 * @param string $code    Codigo del problema.
+	 * @param string $message Mensaje legible.
+	 * @return array
+	 */
+	private static function fail( $summary, $code, $message ) {
+		$summary['error'] = (string) $message;
+		update_option( self::OPT_LAST_REPORT, $summary, false );
+		Premiero_Remote_Backups::report_problem( (string) $code, (string) $message );
+		return $summary;
+	}
+
+	/**
+	 * Pasa a "missing" los pendientes y reintentos cuyo archivo local ya no existe.
+	 *
+	 * @param string $directory Carpeta de UpdraftPlus.
+	 * @return int Numero de registros liberados.
+	 */
+	private static function release_unreachable_items( $directory ) {
+		if ( Premiero_Backup_Worker::has_active_lock() ) {
+			return 0;
+		}
+		$released = 0;
+		foreach ( Premiero_Backup_Sync_Queue::waiting_upload_items() as $item ) {
+			$filename = basename( (string) $item->filename );
+			$local    = trailingslashit( $directory ) . $filename;
+			if ( is_file( $local ) && ! is_link( $local ) ) {
+				continue;
+			}
+			Premiero_Backup_Sync_Queue::mark_missing( $item->id, 'UpdraftPlus elimino el archivo local antes de que pudiera subirse.' );
+			++$released;
+		}
+		return $released;
+	}
+
+	/**
+	 * Cierra los registros de un conjunto retirado que nunca se subieron.
+	 *
+	 * @param array $group   Registros del conjunto.
+	 * @param array $summary Resumen en curso.
+	 * @return array Registros que si tienen copia remota que gestionar.
+	 */
+	private static function close_never_uploaded( $group, &$summary ) {
+		$remaining = array();
+		foreach ( $group as $item ) {
+			if ( 'missing' === (string) $item->status && '' === trim( (string) $item->remote_file ) ) {
+				Premiero_Backup_Sync_Queue::mark_pruned( $item->id, 'Nunca llego a subirse y UpdraftPlus ya no conserva la copia; no habia nada que borrar en el servidor.' );
+				++$summary['pruned'];
+				continue;
+			}
+			$remaining[] = $item;
+		}
+		return $remaining;
 	}
 
 	private static function group_items( $items ) {

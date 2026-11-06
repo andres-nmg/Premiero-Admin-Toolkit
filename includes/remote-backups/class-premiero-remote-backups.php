@@ -15,6 +15,8 @@ final class Premiero_Remote_Backups {
 	const CRON_SCAN_SOON = 'premiero_remote_backups_scan_soon';
 	const CRON_WORKER = 'premiero_remote_backups_worker';
 	const SCHEDULE_SCAN = 'premiero_remote_backups_15_minutes';
+	const OPT_PROBLEM = 'premiero_remote_backups_problem';
+	const PROBLEM_RENOTIFY = 12 * HOUR_IN_SECONDS;
 
 	private static $initialized = false;
 
@@ -92,6 +94,72 @@ final class Premiero_Remote_Backups {
 			return;
 		}
 		self::schedule_single_earliest( self::CRON_WORKER, $delay );
+	}
+
+	/**
+	 * Registra un problema que impide sincronizar y avisa por Telegram.
+	 * Repite el aviso como mucho cada 12 horas mientras el problema siga igual.
+	 *
+	 * @param string $code    Codigo estable del problema.
+	 * @param string $message Mensaje legible.
+	 */
+	public static function report_problem( $code, $message ) {
+		$now      = time();
+		$current  = self::get_problem();
+		$same     = ! empty( $current ) && (string) $current['code'] === (string) $code;
+		$problem  = array(
+			'code'        => (string) $code,
+			'message'     => sanitize_text_field( (string) $message ),
+			'since'       => $same ? (int) $current['since'] : $now,
+			'notified_at' => $same ? (int) $current['notified_at'] : 0,
+		);
+		if ( $now - (int) $problem['notified_at'] >= self::PROBLEM_RENOTIFY ) {
+			if ( self::send_telegram(
+				'⚠️ Copias remotas detenidas',
+				array(
+					$problem['message'],
+					'Desde: ' . wp_date( 'd/m/Y H:i', $problem['since'] ),
+					'Revisa Premiero › Copias de Seguridad.',
+				)
+			) ) {
+				$problem['notified_at'] = $now;
+			}
+		}
+		update_option( self::OPT_PROBLEM, $problem, false );
+	}
+
+	/**
+	 * Borra el problema registrado y avisa de la recuperacion si se habia notificado.
+	 */
+	public static function clear_problem() {
+		$current = self::get_problem();
+		if ( empty( $current ) ) {
+			return;
+		}
+		delete_option( self::OPT_PROBLEM );
+		if ( ! empty( $current['notified_at'] ) ) {
+			self::send_telegram( '✅ Copias remotas recuperadas', array( 'La sincronizacion SFTP vuelve a funcionar.' ) );
+		}
+	}
+
+	/**
+	 * @return array Problema activo o array vacio.
+	 */
+	public static function get_problem() {
+		$problem = get_option( self::OPT_PROBLEM, array() );
+		return is_array( $problem ) && ! empty( $problem['code'] ) ? $problem : array();
+	}
+
+	private static function send_telegram( $title, $lines ) {
+		if ( ! class_exists( 'Premiero_Telegram' ) || ! class_exists( 'Premiero_Telegram_Sender' ) || ! Premiero_Telegram::is_active() ) {
+			return false;
+		}
+		try {
+			$result = Premiero_Telegram_Sender::send( $title, $lines );
+		} catch ( \Throwable $error ) {
+			return false;
+		}
+		return is_array( $result ) && ! empty( $result['ok'] );
 	}
 
 	private static function schedule_single_earliest( $hook, $delay ) {

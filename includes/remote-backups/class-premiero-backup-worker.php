@@ -47,6 +47,7 @@ final class Premiero_Backup_Worker {
 			$config = Premiero_Remote_Backup_Settings::runtime_config();
 			if ( is_wp_error( $config ) ) {
 				$retry_delay = Premiero_Backup_Sync_Queue::mark_retry( $item->id, $config->get_error_message() );
+				Premiero_Remote_Backups::report_problem( $config->get_error_code(), $config->get_error_message() );
 				return;
 			}
 
@@ -58,6 +59,7 @@ final class Premiero_Backup_Worker {
 			$opened      = $client->open();
 			if ( is_wp_error( $opened ) ) {
 				$retry_delay = Premiero_Backup_Sync_Queue::mark_retry( $item->id, $opened->get_error_message() );
+				Premiero_Remote_Backups::report_problem( $opened->get_error_code(), 'No se pudo conectar con el servidor SFTP: ' . $opened->get_error_message() );
 				return;
 			}
 			if ( ! $client->ensure_directory( $remote_dir ) ) {
@@ -108,6 +110,7 @@ final class Premiero_Backup_Worker {
 				return;
 			}
 			Premiero_Backup_Sync_Queue::mark_synced( $item->id, $remote, $item->local_size, $target_key );
+			Premiero_Remote_Backups::clear_problem();
 		} catch ( \Throwable $error ) {
 			if ( isset( $item ) && $item ) {
 				$retry_delay = Premiero_Backup_Sync_Queue::mark_retry( $item->id, sanitize_text_field( $error->getMessage() ) );
