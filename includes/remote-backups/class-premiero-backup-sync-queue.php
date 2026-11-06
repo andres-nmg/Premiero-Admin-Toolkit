@@ -121,6 +121,7 @@ final class Premiero_Backup_Sync_Queue {
 				'remote_file'     => (string) $remote_file,
 				'remote_size'     => (int) $remote_size,
 				'remote_target'   => (string) $remote_target,
+				'attempts'        => 0,
 				'next_attempt_at' => 0,
 				'local_missing_since' => 0,
 				'last_error'      => '',
@@ -128,7 +129,7 @@ final class Premiero_Backup_Sync_Queue {
 				'synced_at'       => $now,
 			),
 			array( 'id' => (int) $id ),
-			array( '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%d', '%d' ),
+			array( '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%s', '%d', '%d' ),
 			array( '%d' )
 		);
 	}
@@ -261,6 +262,21 @@ final class Premiero_Backup_Sync_Queue {
 		global $wpdb;
 		$count = $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table_name() . " WHERE status IN ('pending','retry','uploading')" );
 		return (int) $count > 0;
+	}
+
+	public static function count_unfinished() {
+		global $wpdb;
+		return (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table_name() . " WHERE status IN ('pending','retry','uploading')" );
+	}
+
+	/**
+	 * Pendientes y reintentos que aun esperan a subirse (no incluye "uploading").
+	 *
+	 * @return array
+	 */
+	public static function waiting_upload_items() {
+		global $wpdb;
+		return $wpdb->get_results( 'SELECT * FROM ' . self::table_name() . " WHERE status IN ('pending','retry') ORDER BY id ASC" );
 	}
 
 	public static function release_pending() {

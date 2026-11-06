@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.8.5
+Stable tag: 3.8.6
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -83,6 +83,15 @@ Si el plugin Redirection está activo, en Redirection (debe tener su asistente c
 No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y limita ese email a uno al día por defecto. El aviso va ligado a ese email y no funciona en multisite. Fuera del admin se avisa de cualquier fatal que ocurra después de cargar los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
 
 == Changelog ==
+
+= 3.8.6 =
+
+* Copias remotas: la conciliación ya no falla en silencio. Si falta la clave SSH, la configuración no es válida o no se puede conectar, guarda el error en el informe y lo muestra en la pestaña.
+* Copias remotas: aviso por Telegram (como mucho cada 12 horas) cuando la sincronización se detiene, y aviso de recuperación cuando vuelve a funcionar.
+* Copias remotas: los archivos pendientes o en reintento cuyo original ya borró UpdraftPlus pasan a «No disponible» y dejan de bloquear la retención remota del resto de copias.
+* Copias remotas: los archivos que nunca llegaron a subirse se cierran sin marcar el conjunto como «configuración anterior», para que no impidan borrar el resto de archivos de la copia.
+* Copias remotas: avisos en pantalla de clave SSH sin registrar, sincronización detenida y retención en pausa por archivos pendientes.
+* Copias remotas: el contador de intentos se pone a cero cuando el archivo se sincroniza.
 
 = 3.8.5 =
 
