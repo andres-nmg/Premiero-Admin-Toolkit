@@ -54,6 +54,7 @@ jobs:
             --exclude "README.md" \
             --exclude "README-TECNICO.md" \
             --exclude "RELEASE_NOTES.md" \
+            --exclude "CLAUDE.md" \
             --exclude "vendor/"
 
           composer install \
