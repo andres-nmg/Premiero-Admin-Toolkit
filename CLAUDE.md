@@ -9,7 +9,7 @@ Plugin de WordPress **público** (GPL) que se actualiza desde las Releases de es
   - nombres de otros productos internos de Premiero;
   - proveedores de infraestructura (hosting, almacenamiento de backups…);
   - correos personales, credenciales, hosts, IPs, rutas de servidores.
-- Los commits se firman con `Andres-Premiero <79188333+andres-nmg@users.noreply.github.com>`. Nunca con un correo personal.
+- Los commits se firman con `Andres-Premiero <andres@premiero.es>`. Nunca con un correo personal.
 - La documentación técnica interna va en `README-TECNICO.md`, que está en `.gitignore`. No subirla nunca.
 - No añadir huellas públicas del plugin: comentarios HTML, IDs o clases `premiero-*` en el front o en el login, cabeceras HTTP con el nombre del plugin, ni archivos con nombre fijo en zonas accesibles por URL.
 
