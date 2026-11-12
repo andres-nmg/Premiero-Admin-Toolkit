@@ -51,6 +51,9 @@ jobs:
             --exclude ".gitignore" \
             --exclude ".gitattributes" \
             --exclude ".DS_Store" \
+            --exclude "README.md" \
+            --exclude "README-TECNICO.md" \
+            --exclude "RELEASE_NOTES.md" \
             --exclude "vendor/"
 
           composer install \
@@ -60,6 +63,8 @@ jobs:
             --no-progress \
             --prefer-dist \
             --classmap-authoritative
+
+          rm -f "${PLUGIN_DIR}/composer.json" "${PLUGIN_DIR}/composer.lock"
 
           cd "${PACKAGE_ROOT}"
           zip -rq "${GITHUB_WORKSPACE}/premiero-admin-toolkit.zip" "premiero-admin-toolkit"

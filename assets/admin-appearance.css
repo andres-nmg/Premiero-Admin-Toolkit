@@ -613,7 +613,7 @@ body.premiero-admin-dark .premiero-remote-backups :where(
 	color: var(--premiero-admin-text) !important;
 }
 
-/* Premiero plugin A: enlaza su sistema visual con la paleta global. */
+/* Compatibilidad oscura: plugin A. */
 body.premiero-admin-dark :where(.plcrm-admin, .post-type-plcrm_lead) {
 	--plcrm-brand: var(--premiero-admin-accent);
 	--plcrm-brand-dark: var(--premiero-admin-accent);
@@ -690,7 +690,7 @@ body.premiero-admin-dark :where(.plcrm-funnel-track, .plcrm-bar-row > div) {
 	background: var(--premiero-admin-border) !important;
 }
 
-/* Premiero plugin B. */
+/* Compatibilidad oscura: plugin B. */
 body.premiero-admin-dark .pcf-admin {
 	--pcf-brand: var(--premiero-admin-accent);
 	--pcf-brand-dark: var(--premiero-admin-accent);
@@ -755,7 +755,7 @@ body.premiero-admin-dark :where(
 	color: var(--premiero-admin-muted) !important;
 }
 
-/* Premiero Maintenance Console. */
+/* Compatibilidad oscura: plugin C. */
 body.premiero-admin-dark .pmc-admin {
 	--pmc-border: var(--premiero-admin-border);
 	--pmc-muted: var(--premiero-admin-muted);
@@ -941,7 +941,7 @@ body.premiero-admin-dark :where(
 	color: var(--premiero-admin-muted) !important;
 }
 
-/* plugin A: ficha del lead y cajas nativas de publicación. */
+/* Plugin A: fichas y cajas nativas de publicación. */
 body.premiero-admin-dark.post-type-plcrm_lead :where(
 	#titlediv #title,
 	#poststuff .postbox,
@@ -989,7 +989,7 @@ body.premiero-admin-dark :where(.plcrm-state-conexion_enviada, .plcrm-state-mens
 	color: #6f4d00 !important;
 }
 
-/* plugin B: hojas, tablas accesorias y ajustes. */
+/* Plugin B: hojas, tablas accesorias y ajustes. */
 body.premiero-admin-dark :where(
 	.pcf-sheet-panel,
 	.pcf-sheet-toolbar,
@@ -1309,7 +1309,7 @@ body.premiero-admin-dark .components-modal__screen-overlay {
 	background: rgba(3, 7, 18, .82) !important;
 }
 
-/* plugin B: columnas calculadas y ventanas emergentes. */
+/* Plugin B: columnas calculadas y ventanas emergentes. */
 body.premiero-admin-dark :where(
 	.pcf-sheet-table .is-formula,
 	.pcf-sheet-table td.is-formula,

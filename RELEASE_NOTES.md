@@ -1,21 +1,19 @@
 # Publicación de Premiero Admin Toolkit
 
-- **Versión:** `3.8.6`
-- **Etiqueta:** `v3.8.6`
-- **Título de la Release:** `Premiero Admin Toolkit 3.8.6`
+- **Versión:** `3.8.7`
+- **Etiqueta:** `v3.8.7`
+- **Título de la Release:** `Premiero Admin Toolkit 3.8.7`
 - **Asset generado:** `premiero-admin-toolkit.zip`
 
 ## Texto para la Release
 
-## Premiero Admin Toolkit 3.8.6
+## Premiero Admin Toolkit 3.8.7
 
-Corrige el módulo de copias remotas cuando la sincronización se detiene sin avisar.
+Privacidad de las instalaciones.
 
 ### Cambios principales
 
-- **Sin fallos silenciosos:** si falta la clave SSH, la configuración no es válida o no se puede conectar, la conciliación guarda el error en su informe y la pestaña lo muestra. Antes terminaba sin guardar nada y la pantalla seguía enseñando el último informe correcto.
-- **Aviso por Telegram** cuando la sincronización se detiene (repetido como mucho cada 12 horas) y aviso de recuperación cuando vuelve a funcionar.
-- **La retención ya no se bloquea indefinidamente:** los archivos pendientes o en reintento cuyo original ya borró UpdraftPlus pasan a «No disponible» y dejan de contar como trabajo sin terminar.
-- **Archivos que nunca se subieron:** se cierran sin bloquear el borrado del resto del conjunto.
-- **Avisos en pantalla:** clave SSH sin registrar, sincronización detenida y retención en pausa por archivos pendientes.
-- El contador de intentos se pone a cero cuando el archivo se sincroniza.
+- **Carpeta del plugin oculta** para visitantes sin sesión (Apache y LiteSpeed): reciben la página 404 de WordPress, como si el plugin no existiera. Las reglas se escriben en un bloque propio del `.htaccess` raíz y se retiran al desactivar.
+- **Mu-plugins con nombre propio de cada web.** Los existentes se renombran automáticamente sin cambiar su contenido.
+- **Copia de los snippets protegida.** El antiguo `.bak` se traslada a una carpeta protegida y se elimina.
+- Sin marcas del plugin en el HTML público, en la pantalla de acceso ni en la cabecera de las redirecciones.

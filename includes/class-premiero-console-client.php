@@ -1872,6 +1872,23 @@ final class Premiero_Console_Client {
 		);
 	}
 
+	/**
+	 * Origen (esquema + host + puerto) de la consola emparejada, o cadena vacía.
+	 *
+	 * @return string
+	 */
+	public static function console_origin() {
+		$base = self::get_api_base();
+		if ( '' === $base ) {
+			return '';
+		}
+		$parts = wp_parse_url( $base );
+		if ( empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+		return strtolower( $parts['scheme'] . '://' . $parts['host'] ) . ( empty( $parts['port'] ) ? '' : ':' . (int) $parts['port'] );
+	}
+
 	private static function get_api_base() {
 		$from_constant = defined( 'PREMIERO_CONSOLE_API_BASE' );
 		$value         = $from_constant

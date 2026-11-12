@@ -23,7 +23,7 @@ final class Premiero_Telegram {
 	const TRANSIENT_NOTICES = 'premiero_telegram_notices';
 	const TOKEN_PATTERN = '/^\d+:[A-Za-z0-9_-]{30,}$/';
 	const CHAT_ID_PATTERN = '/^-?\d+$/';
-	const MU_FILE = '00-premiero-telegram-recovery.php';
+	const MU_FILE = '00-premiero-telegram-recovery'; // Prefijo; el nombre lleva un sufijo propio de cada web.
 
 	/** Vacios a proposito: el repositorio es publico y cada instalacion guarda las suyas. */
 	const DEFAULT_TOKEN = '';
@@ -325,7 +325,37 @@ final class Premiero_Telegram {
 	/* ---------- Mu-plugin de errores fatales ---------- */
 
 	public static function mu_plugin_path() {
-		return WP_CONTENT_DIR . '/mu-plugins/' . self::MU_FILE;
+		$suffix = function_exists( 'premiero_mu_token' ) ? '-' . premiero_mu_token() : '';
+		return WP_CONTENT_DIR . '/mu-plugins/' . self::MU_FILE . $suffix . '.php';
+	}
+
+	/**
+	 * Copias del mu-plugin con otro nombre (el fijo de versiones anteriores).
+	 *
+	 * @return string[]
+	 */
+	private static function other_mu_plugin_paths() {
+		$current = self::mu_plugin_path();
+		$found   = glob( WP_CONTENT_DIR . '/mu-plugins/' . self::MU_FILE . '*.php' );
+		return array_values( array_diff( is_array( $found ) ? $found : array(), array( $current ) ) );
+	}
+
+	/**
+	 * Renombra el mu-plugin de versiones anteriores al nombre actual. Puede
+	 * cargarse dos veces sin problema (require_once + init idempotente).
+	 *
+	 * @return bool True si ya no quedan copias con otro nombre.
+	 */
+	public static function migrate_mu_plugin_name() {
+		$current = self::mu_plugin_path();
+		foreach ( self::other_mu_plugin_paths() as $old ) {
+			if ( ! file_exists( $current ) ) {
+				@rename( $old, $current );
+			} else {
+				@unlink( $old );
+			}
+		}
+		return array() === self::other_mu_plugin_paths();
 	}
 
 	public static function mu_plugin_is_wanted() {
@@ -349,6 +379,7 @@ final class Premiero_Telegram {
 			return true;
 		}
 
+		self::migrate_mu_plugin_name();
 		$file    = self::mu_plugin_path();
 		$content = self::mu_plugin_contents();
 		if ( file_exists( $file ) && hash_equals( md5( $content ), (string) md5_file( $file ) ) ) {
@@ -370,9 +401,10 @@ final class Premiero_Telegram {
 	}
 
 	private static function remove_mu_plugin() {
-		$file = self::mu_plugin_path();
-		if ( file_exists( $file ) ) {
-			@unlink( $file );
+		foreach ( array_merge( array( self::mu_plugin_path() ), self::other_mu_plugin_paths() ) as $file ) {
+			if ( file_exists( $file ) ) {
+				@unlink( $file );
+			}
 		}
 	}
 

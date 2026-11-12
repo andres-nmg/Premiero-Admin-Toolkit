@@ -225,7 +225,7 @@ final class Premiero_Remote_Backup_Settings {
 				<div class="premiero-remote-settings-body">
 					<div class="premiero-remote-help">
 						<strong>Como funciona</strong>
-						<p>UpdraftPlus sigue generando, programando y restaurando las copias. Premiero solo se encarga de transportarlas por SFTP y no modifica Premiero Control.</p>
+						<p>UpdraftPlus sigue generando, programando y restaurando las copias. Premiero solo se encarga de transportarlas por SFTP y no modifica la consola de mantenimiento.</p>
 						<p><strong>Recomendacion:</strong> deja el almacenamiento remoto de UpdraftPlus en <em>Ninguno</em>. Despues de guardar estos datos, usa <strong>Probar conexion</strong> una vez para verificar escritura, tamaño y clave SSH.</p>
 					</div>
 

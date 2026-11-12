@@ -74,16 +74,7 @@ Cuando UpdraftPlus termina correctamente una copia, Premiero registra sus archiv
 
 La opción **Mantener el servidor SFTP sincronizado con las copias conservadas por UpdraftPlus** convierte el historial de UpdraftPlus en la fuente de verdad: un archivo remoto ausente se vuelve a subir y un conjunto retirado por la política de retención se elimina también del servidor. Premiero solo puede borrar archivos que haya sincronizado y registrado previamente, nunca borra copias locales, espera al menos 30 minutos, comprueba nuevamente el historial y no elimina nada mientras exista una transferencia pendiente.
 
-El módulo no cambia la programación ni la retención configuradas en UpdraftPlus y no escribe en los datos utilizados por Premiero Control.
-
-### Migración desde legacy
-
-Si un sitio tiene instalado legacy Admin Toolkit:
-
-1. Instala `premiero-admin-toolkit.zip` como un plugin nuevo.
-2. Pulsa **Activar** en Premiero Admin Toolkit.
-3. Premiero desactivará legacy y migrará automáticamente las opciones compartidas, la identidad, el logo y el MU-plugin de snippets.
-4. Espera al aviso de migración correcta antes de eliminar el plugin legacy antiguo.
+El módulo no cambia la programación ni la retención configuradas en UpdraftPlus y no escribe en los datos utilizados por la consola.
 
 ## Avisos por Telegram
 
@@ -96,7 +87,7 @@ El plugin no incluye credenciales, porque este repositorio es público. El token
 
 Los emails duplicados de WordPress solo se desactivan si la casilla está marcada, Telegram está activo, las credenciales son válidas y los avisos equivalentes están marcados. Si falta algo, el email se envía. El email de restablecimiento de contraseña solo se omite para administradores y cuando Telegram confirma la entrega. El email del modo de recuperación y los de los formularios no se pueden desactivar.
 
-Para avisar de errores que ocurren antes de cargar el Toolkit, este crea el mu-plugin `00-premiero-telegram-recovery.php` y lo elimina al desactivarse. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y por defecto limita ese email a uno al día; el aviso va ligado a él y no funciona en multisite. Fuera del admin se avisa de cualquier fatal posterior a la carga de los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
+Para avisar de errores que ocurren antes de cargar el Toolkit, este crea un mu-plugin cuyo nombre empieza por `00-premiero-telegram-recovery` y lo elimina al desactivarse. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y por defecto limita ese email a uno al día; el aviso va ligado a él y no funciona en multisite. Fuera del admin se avisa de cualquier fatal posterior a la carga de los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
 
 Los ajustes se conservan al desactivar el plugin y, como no hay `uninstall.php`, también al eliminarlo.
 

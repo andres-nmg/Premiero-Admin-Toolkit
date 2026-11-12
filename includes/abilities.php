@@ -228,7 +228,7 @@ final class Premiero_Abilities {
 
 	private static function register_code() {
 		$code_props = array(
-			'php'       => array( 'type' => 'string', 'description' => 'Snippets PHP (MU-plugin premiero-snippets.php), sin cabecera.' ),
+			'php'       => array( 'type' => 'string', 'description' => 'Snippets PHP (MU-plugin de snippets), sin cabecera.' ),
 			'css'       => array( 'type' => 'string', 'description' => 'CSS cargado en el frontend.' ),
 			'head_html' => array( 'type' => 'string', 'description' => 'HTML inyectado en <head>.' ),
 			'body_html' => array( 'type' => 'string', 'description' => 'HTML inyectado al inicio de <body>.' ),
@@ -244,7 +244,7 @@ final class Premiero_Abilities {
 
 		self::add( 'code-update', array(
 			'label'       => 'Escribir código personalizado',
-			'description' => 'Escribe en uno de los bloques de la pestaña Código. Por defecto AÑADE el contenido al final (mode=append). Usa mode=replace_fragment para sustituir un fragmento exacto (search, que debe aparecer una sola vez) y mode=replace solo para reemplazar el bloque entero. El PHP se valida antes de escribirse y se guarda copia .bak del MU-plugin anterior. Devuelve el contenido previo para poder restaurarlo.',
+			'description' => 'Escribe en uno de los bloques de la pestaña Código. Por defecto AÑADE el contenido al final (mode=append). Usa mode=replace_fragment para sustituir un fragmento exacto (search, que debe aparecer una sola vez) y mode=replace solo para reemplazar el bloque entero. El PHP se valida antes de escribirse y se guarda copia protegida del MU-plugin anterior. Devuelve el contenido previo para poder restaurarlo.',
 			'annotations' => self::writes( true, false ),
 			'execute'     => array( __CLASS__, 'code_update' ),
 			'input'       => self::obj( array(
@@ -312,7 +312,7 @@ final class Premiero_Abilities {
 			'previous' => $before,
 			'current'  => $after,
 			'message'  => 'php' === $target
-				? 'Snippets guardados en wp-content/mu-plugins/premiero-snippets.php (copia anterior en premiero-snippets.php.bak).'
+				? 'Snippets guardados en el MU-plugin de wp-content/mu-plugins (copia anterior en su carpeta de copias, protegida).'
 				: 'Bloque ' . $target . ' guardado.',
 		);
 	}

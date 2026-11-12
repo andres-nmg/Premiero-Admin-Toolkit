@@ -45,7 +45,7 @@ final class Premiero_Redirects {
 		foreach ( $items as $item ) {
 			if ( isset( $item['source'], $item['target'] ) && $item['source'] === $path ) {
 				// Los destinos internos se guardan como ruta absoluta desde la raíz del dominio.
-				wp_redirect( $item['target'], 302 === (int) $item['code'] ? 302 : 301, 'Premiero Admin Toolkit' ); // phpcs:ignore WordPress.Security.SafeRedirect
+				wp_redirect( $item['target'], 302 === (int) $item['code'] ? 302 : 301, 'WordPress' ); // phpcs:ignore WordPress.Security.SafeRedirect
 				exit;
 			}
 		}

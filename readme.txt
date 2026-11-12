@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.8.6
+Stable tag: 3.8.7
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -38,8 +38,6 @@ https://github.com/andres-nmg/premiero-admin-toolkit/
 3. Activa Premiero Admin Toolkit.
 4. Abre `Premiero` en el menú de administración.
 
-Si el sitio utiliza legacy Admin Toolkit, instala y activa Premiero Admin Toolkit sin desactivar manualmente el anterior. Durante la activación se migrarán su configuración, identidad, logo y snippets. legacy quedará inactivo y podrá eliminarse después de comprobar el aviso de migración.
-
 == Frequently Asked Questions ==
 
 = ¿Puedo modificar y redistribuir el plugin? =
@@ -68,7 +66,7 @@ Con Telegram desactivado, sin credenciales válidas o sin los avisos equivalente
 
 = ¿Por qué aparece un mu-plugin de Telegram? =
 
-Es `00-premiero-telegram-recovery.php`. Lo crea el Toolkit para que los avisos de errores fatales funcionen aunque el error ocurra antes de cargarlo, y se elimina al desactivar el Toolkit o los dos avisos de errores fatales. No hay que editarlo. Si la carpeta `mu-plugins` no admite escritura, la pestaña lo indica y esos errores tempranos no se avisan.
+Su nombre empieza por `00-premiero-telegram-recovery` y lleva un sufijo propio de cada web. Lo crea el Toolkit para que los avisos de errores fatales funcionen aunque el error ocurra antes de cargarlo, y se elimina al desactivar el Toolkit o los dos avisos de errores fatales. No hay que editarlo. Si la carpeta `mu-plugins` no admite escritura, la pestaña lo indica y esos errores tempranos no se avisan.
 
 = ¿Cómo uso las herramientas MCP? =
 
@@ -83,6 +81,14 @@ Si el plugin Redirection está activo, en Redirection (debe tener su asistente c
 No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y limita ese email a uno al día por defecto. El aviso va ligado a ese email y no funciona en multisite. Fuera del admin se avisa de cualquier fatal que ocurra después de cargar los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
 
 == Changelog ==
+
+= 3.8.7 =
+
+* La carpeta del plugin responde con la página 404 de WordPress a quien no tiene sesión iniciada (Apache y LiteSpeed), mediante un bloque propio en el `.htaccess` raíz que se retira al desactivar el plugin.
+* Los mu-plugins de snippets y de errores fatales llevan un nombre propio de cada web. Los existentes se renombran sin cambiar su contenido.
+* La copia anterior de los snippets ya no se guarda como `.bak` accesible desde la web, sino en una carpeta protegida. La copia antigua se traslada y se elimina.
+* Eliminadas las marcas del plugin en el HTML público, en la pantalla de acceso y en la cabecera de las redirecciones.
+* La migración desde el Admin Toolkit anterior funciona igual, sin nombrarlo en el código.
 
 = 3.8.6 =
 
@@ -128,7 +134,7 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 
 = 3.8.1 =
 
-* La conexión con Premiero Maintenance Console migra automáticamente la URL antigua (`premiero.es/cms`) a `https://hub.premiero.es/wp-json/premiero-console/v1`, sin necesidad de volver a emparejar.
+* La conexión con la consola de mantenimiento migra automáticamente la URL antigua de la consola, sin necesidad de volver a emparejar.
 
 = 3.8.0 =
 
@@ -194,12 +200,12 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 
 = 3.5.12 =
 
-* El diseño de pestañas inspirado en plugin B forma parte ahora del propio Toolkit y no depende de activar Apariencia.
+* El nuevo diseño de pestañas forma parte ahora del propio Toolkit y no depende de activar Apariencia.
 * El granate Premiero se utiliza como énfasis predeterminado y se sustituye por el color configurado cuando corresponde.
 
 = 3.5.11 =
 
-* Unificado el diseño de pestañas con la navegación de Premiero plugin B.
+* Unificado el diseño de pestañas.
 * Las pestañas se muestran directamente sobre el lienzo, con una línea base fina y subrayado exclusivo para hover y estado activo.
 * El nuevo patrón se aplica a cualquier paleta mientras la personalización visual esté activada.
 
@@ -259,7 +265,7 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 
 * Añadidos colores independientes para botones principales y secundarios, incluido el color de sus textos.
 * Corregido el contraste oscuro en Código, Avisos, Menú y zonas nativas de edición y publicación de WordPress.
-* Reforzado el modo oscuro de las fichas de plugin A, las hojas y ajustes de plugin B y la disponibilidad de Maintenance Console.
+* Reforzado el modo oscuro de otros plugins de Premiero.
 * Ajustadas cabeceras, pies de tabla, campos, etiquetas, estados neutros y CodeMirror para evitar superficies claras o textos ilegibles.
 
 = 3.5.0 =
@@ -272,7 +278,7 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 * Los ajustes se validan antes de guardarse y los estilos se aplican únicamente en la administración.
 * Separados los colores y las tipografías de títulos, texto principal y texto secundario.
 * Incluidas localmente Maven Pro e IBM Plex Mono con sus licencias OFL y un ajuste rápido de tipografías Premiero.
-* Reforzada la compatibilidad oscura de Premiero Admin Toolkit, Premiero plugin A, Premiero plugin B y Premiero Maintenance Console.
+* Reforzada la compatibilidad oscura del Toolkit y de otros plugins de Premiero.
 
 = 3.4.3 =
 
@@ -286,7 +292,7 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 * La ocultación nativa se guarda aunque se cambie de pantalla inmediatamente después de pulsar la X.
 * Los paneles dinámicos que reutilizan un contenedor recalculan el aviso y nunca heredan una ocultación anterior por error.
 * Corregido el responsive del buscador y de las fichas de avisos en tablet y móvil.
-* Sin cambios en Premiero Control, copias SFTP ni el resto de módulos.
+* Sin cambios en la consola, copias SFTP ni el resto de módulos.
 
 = 3.4.2 =
 
@@ -310,7 +316,7 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 * Los borrados remotos se realizan por conjuntos, con margen de seguridad, sin transferencias pendientes y únicamente sobre archivos registrados por Premiero.
 * Las contraseñas se guardan cifradas y la clave SSH del servidor se verifica en conexiones posteriores.
 * Añadido phpseclib 3 y actualizado el empaquetado de Releases para incluir sus dependencias.
-* Premiero Control continúa leyendo sin cambios el estado original de UpdraftPlus.
+* La consola continúa leyendo sin cambios el estado original de UpdraftPlus.
 
 = 3.3.5 =
 
@@ -357,10 +363,10 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 
 = 3.2.0 =
 
-* Añadida migración automática desde legacy Admin Toolkit.
-* Se conservan las opciones existentes y se activa automáticamente la identidad legacy.
+* Añadida migración automática desde el Admin Toolkit anterior.
+* Se conservan las opciones existentes y la identidad anterior.
 * Se importa el logo anterior y se migra el MU-plugin de snippets evitando ejecuciones duplicadas.
-* legacy queda inactivo después de la migración para que pueda eliminarse de forma segura.
+* El plugin anterior queda inactivo después de la migración para que pueda eliminarse de forma segura.
 
 = 3.1.0 =
 

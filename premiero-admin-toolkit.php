@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.8.6
+ * Version:     3.8.7
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -17,17 +17,18 @@
 if ( ! defined('ABSPATH') ) exit;
 
 /*
- * Puente de activación para instalaciones que todavía usan
- * legacy-admin-toolkit. Ese plugin comparte los identificadores
- * internos históricos, así que debe desactivarse antes de cargar esta base.
+ * Puente de activación para instalaciones que todavía usan el Admin Toolkit
+ * anterior a Premiero. Ese plugin comparte los identificadores internos
+ * históricos, así que debe desactivarse antes de cargar esta base. Su carpeta
+ * se reconoce por su huella SHA-256 (PREMIERO_ATK_LEGACY_HASH).
  */
 if ( defined('PREMIERO_ATK_DIR') ) {
-    $premiero_loaded_plugin_dir = basename( rtrim( wp_normalize_path( PREMIERO_ATK_DIR ), '/' ) );
-    if ( 'legacy-admin-toolkit' === $premiero_loaded_plugin_dir ) {
+    $premiero_loaded_plugin_dir = strtolower( basename( rtrim( wp_normalize_path( PREMIERO_ATK_DIR ), '/' ) ) );
+    if ( hash_equals( '018acd4861762fe985ffb639984dfc6ab416243edd2703c6ed272a1068f87396', hash( 'sha256', $premiero_loaded_plugin_dir ) ) ) {
         if ( ! function_exists('deactivate_plugins') ) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
-        $premiero_legacy_plugin = 'legacy-admin-toolkit/legacy-admin-toolkit.php';
+        $premiero_legacy_plugin = $premiero_loaded_plugin_dir . '/' . $premiero_loaded_plugin_dir . '.php';
         $premiero_network_wide  = is_multisite() && is_plugin_active_for_network( $premiero_legacy_plugin );
         deactivate_plugins( $premiero_legacy_plugin, true, $premiero_network_wide );
         update_option( 'premiero_atk_legacy_migration_pending', 1, true );
@@ -36,7 +37,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.8.6');
+define('PREMIERO_ATK_VER', '3.8.7');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_FILE', __FILE__);
@@ -46,8 +47,8 @@ define('PREMIERO_ATK_PLUGIN_SLUG', 'premiero-admin-toolkit');
 define('PREMIERO_ATK_UPDATE_URI', 'https://github.com/andres-nmg/premiero-admin-toolkit/');
 define('PREMIERO_ATK_RELEASE_API', 'https://api.github.com/repos/andres-nmg/premiero-admin-toolkit/releases/latest');
 define('PREMIERO_ATK_RELEASE_ASSET', 'premiero-admin-toolkit.zip');
-define('PREMIERO_ATK_LEGACY_PLUGIN', 'legacy-admin-toolkit/legacy-admin-toolkit.php');
-define('PREMIERO_ATK_LEGACY_LOGO', WP_PLUGIN_DIR . '/legacy-admin-toolkit/assets/legacy-logo.png');
+/** Huella SHA-256 de la carpeta del Admin Toolkit anterior (migración legacy). */
+define('PREMIERO_ATK_LEGACY_HASH', '018acd4861762fe985ffb639984dfc6ab416243edd2703c6ed272a1068f87396');
 
 /** Opciones principales */
 const PREMIERO_OPT_CSS            = 'premiero_custom_css';
@@ -152,13 +153,65 @@ function premiero_get_brand_logo_url( $size = 'full' ) {
     return PREMIERO_ATK_ASSETS . 'premiero-logo.png';
 }
 
+/**
+ * Carpeta del Admin Toolkit anterior, si sigue instalada. Se localiza por su
+ * huella para no publicar su nombre.
+ *
+ * @return string Slug de la carpeta o cadena vacía.
+ */
+function premiero_legacy_slug() {
+    static $slug = null;
+    if ( null !== $slug ) {
+        return $slug;
+    }
+    $slug = '';
+    $dirs = glob( WP_PLUGIN_DIR . '/*-admin-toolkit', GLOB_ONLYDIR );
+    foreach ( (array) $dirs as $dir ) {
+        $name = strtolower( basename( (string) $dir ) );
+        if ( PREMIERO_ATK_PLUGIN_SLUG !== $name && hash_equals( PREMIERO_ATK_LEGACY_HASH, hash( 'sha256', $name ) ) ) {
+            $slug = basename( (string) $dir );
+            break;
+        }
+    }
+    return $slug;
+}
+
+/** Prefijo de marca del plugin anterior (carpeta sin «-admin-toolkit»). */
+function premiero_legacy_prefix() {
+    $slug = premiero_legacy_slug();
+    return '' === $slug ? '' : substr( $slug, 0, -strlen( '-admin-toolkit' ) );
+}
+
+/** Ruta absoluta del archivo principal del plugin anterior. */
+function premiero_legacy_plugin_path() {
+    $slug = premiero_legacy_slug();
+    return '' === $slug ? '' : WP_PLUGIN_DIR . '/' . $slug . '/' . $slug . '.php';
+}
+
+/** Nombre de marca del plugin anterior, leído de su cabecera. */
+function premiero_legacy_brand_name() {
+    $file = premiero_legacy_plugin_path();
+    if ( '' === $file ) {
+        return '';
+    }
+    if ( is_readable( $file ) ) {
+        $data = get_file_data( $file, [ 'Name' => 'Plugin Name' ] );
+        $name = trim( (string) preg_replace( '/\s+Admin\s+Toolkit\s*$/i', '', (string) ( $data['Name'] ?? '' ) ) );
+        if ( '' !== $name ) {
+            return sanitize_text_field( $name );
+        }
+    }
+    return ucfirst( premiero_legacy_prefix() );
+}
+
 function premiero_schedule_legacy_migration() {
-    $legacy_file = WP_PLUGIN_DIR . '/' . PREMIERO_ATK_LEGACY_PLUGIN;
+    $legacy_file = premiero_legacy_plugin_path();
     update_option( 'premiero_atk_legacy_migration_pending', 0, true );
     update_option( 'premiero_atk_legacy_migration_notice', '', true );
 
     if (
-        file_exists( $legacy_file )
+        '' !== $legacy_file
+        && file_exists( $legacy_file )
         && ! get_option( PREMIERO_OPT_WHITE_LABEL_ENABLED, false )
         && '' === trim( (string) get_option( PREMIERO_OPT_WHITE_LABEL_NAME, '' ) )
     ) {
@@ -1021,6 +1074,86 @@ function premiero_render_repository() {
     }
 }
 
+/* ====================== Ocultar la carpeta del plugin ====================== */
+const PREMIERO_HIDE_MARKER = 'Premiero Admin Toolkit';
+
+/**
+ * Reglas para el .htaccess raíz de WordPress (Apache/LiteSpeed): quien no tenga
+ * sesión iniciada recibe la página 404 de WordPress al pedir cualquier archivo
+ * de la carpeta del plugin, igual que si no estuviera instalado. El logo sigue
+ * accesible desde la consola emparejada, que lo muestra en su panel.
+ *
+ * @return string[] Líneas del bloque, o vacío si no se pueden calcular.
+ */
+function premiero_hide_rules() {
+    $home_url   = home_url( '/' );
+    $home_path  = '/' . trim( (string) wp_parse_url( $home_url, PHP_URL_PATH ), '/' ) . '/';
+    $home_path  = '//' === $home_path ? '/' : $home_path;
+    $plugin_url = PREMIERO_ATK_URL;
+    if ( strtolower( (string) wp_parse_url( $plugin_url, PHP_URL_HOST ) ) !== strtolower( (string) wp_parse_url( $home_url, PHP_URL_HOST ) ) ) {
+        return [];
+    }
+    $plugin_path = '/' . trim( (string) wp_parse_url( $plugin_url, PHP_URL_PATH ), '/' ) . '/';
+    if ( 0 !== strpos( $plugin_path, $home_path ) ) {
+        return [];
+    }
+    $relative = trim( substr( $plugin_path, strlen( $home_path ) ), '/' );
+    if ( '' === $relative ) {
+        return [];
+    }
+
+    $origin = class_exists( 'Premiero_Console_Client' ) ? Premiero_Console_Client::console_origin() : '';
+    $rules  = [ '<IfModule mod_rewrite.c>', 'RewriteEngine On', 'RewriteCond %{HTTP_COOKIE} !wordpress_logged_in_ [NC]' ];
+    if ( '' !== $origin ) {
+        $rules[] = 'RewriteCond %{REQUEST_URI} !/assets/premiero-logo\.png$ [OR]';
+        $rules[] = 'RewriteCond %{HTTP_REFERER} !^' . preg_quote( $origin ) . '/ [NC]';
+    }
+    $rules[] = 'RewriteRule ^' . preg_quote( $relative ) . '(/|$) ' . $home_path . 'index.php [L]';
+    $rules[] = '</IfModule>';
+    return $rules;
+}
+
+/** Ruta del .htaccess raíz si se puede modificar con seguridad. */
+function premiero_hide_rules_file() {
+    if ( is_multisite() ) {
+        return '';
+    }
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/misc.php';
+    if ( ! function_exists( 'got_mod_rewrite' ) || ! got_mod_rewrite() ) {
+        return '';
+    }
+    $file = get_home_path() . '.htaccess';
+    // Solo se toca un .htaccess que ya existe (el de los enlaces permanentes).
+    return ( file_exists( $file ) && is_writable( $file ) ) ? $file : '';
+}
+
+/** Mantiene al día el bloque del .htaccess raíz (ruta de WordPress y consola). */
+function premiero_sync_hide_rules() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+    $file = premiero_hide_rules_file();
+    if ( '' === $file ) {
+        return;
+    }
+    $rules = premiero_hide_rules();
+    if ( extract_from_markers( $file, PREMIERO_HIDE_MARKER ) === $rules ) {
+        return;
+    }
+    insert_with_markers( $file, PREMIERO_HIDE_MARKER, $rules );
+}
+add_action( 'admin_init', 'premiero_sync_hide_rules', 30 );
+
+/** Al desactivar el plugin se vacía su bloque del .htaccess raíz. */
+function premiero_remove_hide_rules() {
+    $file = premiero_hide_rules_file();
+    if ( '' !== $file && [] !== extract_from_markers( $file, PREMIERO_HIDE_MARKER ) ) {
+        insert_with_markers( $file, PREMIERO_HIDE_MARKER, [] );
+    }
+}
+register_deactivation_hook( __FILE__, 'premiero_remove_hide_rules' );
+
 /* ====================== Snippets como MU ====================== */
 function premiero_ensure_mu_dir() {
     $mu_dir = WP_CONTENT_DIR . '/mu-plugins';
@@ -1043,9 +1176,107 @@ function premiero_validate_php_snippets( $content ) {
     return true;
 }
 
+/**
+ * Sufijo aleatorio y propio de cada instalación para los archivos que el
+ * Toolkit crea en mu-plugins. Evita que se pueda comprobar desde fuera si una
+ * web usa el plugin pidiendo rutas conocidas.
+ */
+function premiero_mu_token() {
+    $token = (string) get_option( 'premiero_mu_token', '' );
+    if ( ! preg_match( '/^[a-z0-9]{12}$/', $token ) ) {
+        $token = strtolower( wp_generate_password( 12, false, false ) );
+        update_option( 'premiero_mu_token', $token, true );
+    }
+    return $token;
+}
+
+/** Ruta del MU-plugin de snippets. */
+function premiero_mu_snippets_file() {
+    return WP_CONTENT_DIR . '/mu-plugins/premiero-snippets-' . premiero_mu_token() . '.php';
+}
+
+/** Ruta del MU-plugin de snippets usada hasta la versión 3.8.6. */
+function premiero_mu_snippets_legacy_file() {
+    return WP_CONTENT_DIR . '/mu-plugins/premiero-snippets.php';
+}
+
+/** Indica si existe el MU-plugin de snippets (con el nombre actual o el antiguo). */
+function premiero_mu_snippets_exists() {
+    return file_exists( premiero_mu_snippets_file() ) || file_exists( premiero_mu_snippets_legacy_file() );
+}
+
+/**
+ * Guarda la copia anterior de los snippets fuera del alcance de la web: en una
+ * subcarpeta de mu-plugins (WordPress no la carga) y como PHP que termina al
+ * ejecutarse, para que su contenido no se pueda descargar.
+ *
+ * @param string $previous Contenido anterior del MU-plugin.
+ * @return bool
+ */
+function premiero_store_mu_snippets_backup( $previous ) {
+    $dir = WP_CONTENT_DIR . '/mu-plugins/premiero-backup-' . premiero_mu_token();
+    if ( ! is_dir( $dir ) && ! wp_mkdir_p( $dir ) ) {
+        return false;
+    }
+    if ( ! file_exists( $dir . '/index.php' ) ) {
+        @file_put_contents( $dir . '/index.php', "<?php\n// Silence is golden.\n" );
+    }
+    $guard = "<?php exit; /* Copia anterior de los snippets. Para restaurarla, borra esta primera línea. */ ?>\n";
+    $file  = $dir . '/premiero-snippets.php';
+    $temp  = $file . '.tmp-' . wp_generate_password( 8, false, false );
+    if ( false === @file_put_contents( $temp, $guard . (string) $previous, LOCK_EX ) ) {
+        return false;
+    }
+    if ( ! @rename( $temp, $file ) ) {
+        wp_delete_file( $temp );
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Pasa los archivos de mu-plugins al formato con nombre propio de cada web y
+ * retira la copia .bak antigua, que el servidor entregaba como texto.
+ * Renombra sin tocar el contenido, así que nunca hay dos copias cargadas.
+ */
+function premiero_migrate_mu_layout() {
+    if ( '2' === (string) get_option( 'premiero_mu_layout', '' ) ) {
+        return;
+    }
+    $done   = true;
+    $legacy = premiero_mu_snippets_legacy_file();
+    if ( file_exists( $legacy ) ) {
+        $target = premiero_mu_snippets_file();
+        if ( file_exists( $target ) || ! @rename( $legacy, $target ) ) {
+            $done = false;
+        }
+    }
+    $legacy_bak = $legacy . '.bak';
+    if ( file_exists( $legacy_bak ) ) {
+        $previous = @file_get_contents( $legacy_bak );
+        if ( false !== $previous && premiero_store_mu_snippets_backup( $previous ) ) {
+            @unlink( $legacy_bak );
+        }
+        if ( file_exists( $legacy_bak ) ) {
+            $done = false;
+        }
+    }
+    if ( class_exists( 'Premiero_Telegram' ) && ! Premiero_Telegram::migrate_mu_plugin_name() ) {
+        $done = false;
+    }
+    if ( $done ) {
+        update_option( 'premiero_mu_layout', '2', true );
+    }
+}
+add_action( 'init', 'premiero_migrate_mu_layout', 1 );
+
 function premiero_write_mu_snippets( $php_code ) {
     if ( ! premiero_ensure_mu_dir() ) return new WP_Error('mu_dir', 'No se pudo crear/escribir en /wp-content/mu-plugins');
-    $file = WP_CONTENT_DIR . '/mu-plugins/premiero-snippets.php';
+    $file   = premiero_mu_snippets_file();
+    $legacy = premiero_mu_snippets_legacy_file();
+    if ( file_exists( $legacy ) && ! file_exists( $file ) && ! @rename( $legacy, $file ) ) {
+        return new WP_Error( 'rename_fail', 'No fue posible renombrar el MU-plugin de snippets anterior.' );
+    }
     $brand_name  = str_replace( '*/', '', premiero_get_brand_name() );
     $toolkit_name = str_replace( '*/', '', premiero_get_toolkit_name() );
     $header = <<<PHP
@@ -1071,7 +1302,7 @@ PHP;
         return new WP_Error( 'write_fail', 'No fue posible preparar el archivo MU: ' . $temp_file );
     }
 
-    if ( file_exists( $file ) && ! @copy( $file, $file . '.bak' ) ) {
+    if ( file_exists( $file ) && ! premiero_store_mu_snippets_backup( (string) @file_get_contents( $file ) ) ) {
         wp_delete_file( $temp_file );
         return new WP_Error( 'backup_fail', 'No fue posible crear la copia de seguridad del MU-plugin actual.' );
     }
@@ -1102,23 +1333,25 @@ function premiero_get_login_logo_url() {
 }
 
 function premiero_import_legacy_brand_logo() {
-    if ( ! is_readable( PREMIERO_ATK_LEGACY_LOGO ) ) {
-        return new WP_Error( 'premiero_legacy_logo_missing', 'No se encontró el logo anterior de legacy.' );
+    $prefix = premiero_legacy_prefix();
+    $logo   = '' === $prefix ? '' : WP_PLUGIN_DIR . '/' . premiero_legacy_slug() . '/assets/' . $prefix . '-logo.png';
+    if ( '' === $logo || ! is_readable( $logo ) ) {
+        return new WP_Error( 'premiero_legacy_logo_missing', 'No se encontró el logo del plugin anterior.' );
     }
 
     require_once ABSPATH . 'wp-admin/includes/file.php';
     require_once ABSPATH . 'wp-admin/includes/image.php';
     require_once ABSPATH . 'wp-admin/includes/media.php';
 
-    $temp_file = wp_tempnam( basename( PREMIERO_ATK_LEGACY_LOGO ) );
-    if ( ! $temp_file || ! copy( PREMIERO_ATK_LEGACY_LOGO, $temp_file ) ) {
+    $temp_file = wp_tempnam( basename( $logo ) );
+    if ( ! $temp_file || ! copy( $logo, $temp_file ) ) {
         return new WP_Error( 'premiero_legacy_logo_copy', 'No se pudo preparar el logo anterior para importarlo.' );
     }
 
     $attachment_id = media_handle_sideload( [
-        'name'     => 'legacy-logo.png',
+        'name'     => basename( $logo ),
         'tmp_name' => $temp_file,
-    ], 0, 'Logo de legacy' );
+    ], 0, 'Logo de ' . premiero_legacy_brand_name() );
 
     if ( is_wp_error( $attachment_id ) ) {
         wp_delete_file( $temp_file );
@@ -1131,8 +1364,11 @@ function premiero_run_legacy_migration() {
         return;
     }
 
-    update_option( PREMIERO_OPT_WHITE_LABEL_NAME, 'legacy' );
-    update_option( PREMIERO_OPT_WHITE_LABEL_ENABLED, 1 );
+    $legacy_brand = premiero_legacy_brand_name();
+    if ( '' !== $legacy_brand ) {
+        update_option( PREMIERO_OPT_WHITE_LABEL_NAME, $legacy_brand );
+        update_option( PREMIERO_OPT_WHITE_LABEL_ENABLED, 1 );
+    }
 
     $logo_warning = false;
     if ( ! get_option( PREMIERO_OPT_WHITE_LABEL_LOGO_ID, 0 ) ) {
@@ -1145,8 +1381,9 @@ function premiero_run_legacy_migration() {
     }
 
     $mu_migrated = true;
-    $legacy_mu   = WP_CONTENT_DIR . '/mu-plugins/legacy-snippets.php';
-    if ( file_exists( $legacy_mu ) ) {
+    $legacy_pre  = premiero_legacy_prefix();
+    $legacy_mu   = '' === $legacy_pre ? '' : WP_CONTENT_DIR . '/mu-plugins/' . $legacy_pre . '-snippets.php';
+    if ( '' !== $legacy_mu && file_exists( $legacy_mu ) ) {
         $mu_result = premiero_write_mu_snippets( get_option(PREMIERO_OPT_SNIPPETS, '') );
         if ( is_wp_error( $mu_result ) ) {
             $mu_migrated = false;
@@ -1174,13 +1411,14 @@ add_action('admin_notices', function() {
         return;
     }
     update_option( 'premiero_atk_legacy_migration_notice', '', true );
+    $brand = esc_html( premiero_get_brand_name() );
 
     if ( 'success' === $notice ) {
-        echo '<div class="notice notice-success is-dismissible"><p><strong>legacy se ha migrado correctamente.</strong> Premiero Admin Toolkit conserva su configuración y ahora utiliza la identidad legacy. El plugin antiguo ha quedado inactivo y ya puedes eliminarlo.</p></div>';
+        echo '<div class="notice notice-success is-dismissible"><p><strong>El plugin anterior se ha migrado correctamente.</strong> Premiero Admin Toolkit conserva su configuración y ahora utiliza la identidad ' . $brand . '. El plugin antiguo ha quedado inactivo y ya puedes eliminarlo.</p></div>';
     } elseif ( 'logo-warning' === $notice ) {
-        echo '<div class="notice notice-warning is-dismissible"><p>La configuración de legacy se ha migrado, pero no se pudo importar su logo. Puedes seleccionarlo desde la pestaña <strong>Identidad</strong>. El plugin antiguo ha quedado inactivo.</p></div>';
+        echo '<div class="notice notice-warning is-dismissible"><p>La configuración del plugin anterior se ha migrado, pero no se pudo importar su logo. Puedes seleccionarlo desde la pestaña <strong>Identidad</strong>. El plugin antiguo ha quedado inactivo.</p></div>';
     } elseif ( 'mu-warning' === $notice ) {
-        echo '<div class="notice notice-error"><p>No se pudo completar la migración del MU-plugin de snippets de legacy. El plugin antiguo está inactivo, pero todavía no debes eliminarlo.</p></div>';
+        echo '<div class="notice notice-error"><p>No se pudo completar la migración del MU-plugin de snippets del plugin anterior. El plugin antiguo está inactivo, pero todavía no debes eliminarlo.</p></div>';
     }
 });
 
@@ -1211,8 +1449,7 @@ function premiero_handle_branding_submit() {
         update_option(PREMIERO_OPT_WHITE_LABEL_ENABLED, $enabled);
     }
 
-    $mu_file = WP_CONTENT_DIR . '/mu-plugins/premiero-snippets.php';
-    if ( file_exists($mu_file) ) {
+    if ( premiero_mu_snippets_exists() ) {
         $mu_result = premiero_write_mu_snippets( get_option(PREMIERO_OPT_SNIPPETS, '') );
         if ( is_wp_error($mu_result) && 'updated' === $status ) {
             $status = 'mu-warning';
@@ -1299,21 +1536,21 @@ add_action('admin_init', function() {
 /* ====================== Aplicar CSS/HTML en frontend ====================== */
 add_action('wp_head', function() {
     $head = trim((string) get_option(PREMIERO_OPT_HEAD_HTML, ''));
-    if ( $head ) echo "\n<!-- Premiero head -->\n{$head}\n";
+    if ( $head ) echo "\n{$head}\n";
     $css = trim((string) get_option(PREMIERO_OPT_CSS, ''));
-    if ( $css ) echo "\n<style id='premiero-custom-css'>\n{$css}\n</style>\n";
+    if ( $css ) echo "\n<style id='site-custom-css'>\n{$css}\n</style>\n";
 }, 99);
 
 add_action('wp_body_open', function() {
     $GLOBALS['premiero_body_open_ran'] = true;
     $body = trim((string) get_option(PREMIERO_OPT_BODY_HTML, ''));
-    if ( $body ) echo "\n<!-- Premiero body_open -->\n{$body}\n";
+    if ( $body ) echo "\n{$body}\n";
 }, 1);
 
 add_action('wp_footer', function() {
     if ( ! empty( $GLOBALS['premiero_body_open_ran'] ) ) return;
     $body = trim((string) get_option(PREMIERO_OPT_BODY_HTML, ''));
-    if ( $body ) echo "\n<!-- Premiero body (fallback) -->\n{$body}\n";
+    if ( $body ) echo "\n{$body}\n";
 }, 1);
 
 /* ====================== RENOMBRAR TOP-LEVEL NO AGRUPADOS ====================== */
@@ -1906,7 +2143,7 @@ function premiero_render_settings_page() {
         }
         echo is_wp_error($result)
             ? '<div class="notice notice-error"><p><strong>Error:</strong> '.esc_html($result->get_error_message()).'</p></div>'
-            : '<div class="notice notice-success is-dismissible"><p>Snippets guardados en <code>wp-content/mu-plugins/premiero-snippets.php</code>.</p></div>';
+            : '<div class="notice notice-success is-dismissible"><p>Snippets guardados en el MU-plugin de <code>wp-content/mu-plugins</code>.</p></div>';
     }
 
     /* Guardado simple Login */
@@ -2331,7 +2568,7 @@ function premiero_render_settings_page() {
                                        name="<?php echo PREMIERO_OPT_WHITE_LABEL_NAME; ?>"
                                        id="<?php echo PREMIERO_OPT_WHITE_LABEL_NAME; ?>"
                                        value="<?php echo esc_attr($white_label_name); ?>"
-                                       placeholder="Ej. legacy">
+                                       placeholder="Ej. Nombre del cliente">
                                 <p class="description">Se utilizará en el menú, la cabecera, los textos, el login y la ficha del plugin.</p>
                             </td>
                         </tr>
@@ -2596,23 +2833,29 @@ function premiero_render_support_inner() { ?>
 
 /* ====================== LOGIN: aplicar color/logo ====================== */
 add_action('login_enqueue_scripts', function() {
-    $logo = esc_url( premiero_get_login_logo_url() );
+    $logo_url = premiero_get_login_logo_url();
+    if ( PREMIERO_ATK_ASSETS . 'premiero-logo.png' === $logo_url && is_readable( PREMIERO_ATK_DIR . 'assets/premiero-logo.png' ) ) {
+        // Logo incrustado: la carpeta del plugin no responde a visitantes anónimos.
+        $logo = 'data:image/png;base64,' . base64_encode( (string) file_get_contents( PREMIERO_ATK_DIR . 'assets/premiero-logo.png' ) );
+    } else {
+        $logo = esc_url( $logo_url );
+    }
     $bg   = trim((string) get_option(PREMIERO_OPT_LOGIN_BG, ''));
     $w    = max(50, (int) get_option(PREMIERO_OPT_LOGIN_LOGO_W, 260));
 
-    echo '<style id="premiero-login-style">';
+    echo '<style id="login-custom-style">';
     if ( $bg ) echo 'body.login{background:'.esc_attr($bg).' !important;}';
     echo '#login h1 a{background:none !important; text-indent:0; width:auto; height:auto;}';
-    echo '#premiero-login-img{display:block; margin:0 auto; max-width:100%; width:'.$w.'px; height:auto;}';
+    echo '#login-custom-logo{display:block; margin:0 auto; max-width:100%; width:'.$w.'px; height:auto;}';
     echo '</style>';
 
-    echo '<script>document.addEventListener("DOMContentLoaded",function(){var a=document.querySelector("#login h1 a"); if(a){a.innerHTML=""; var img=new Image(); img.id="premiero-login-img"; img.alt=document.title||"Logo"; img.src="'.esc_js($logo).'"; a.appendChild(img);} });</script>';
+    echo '<script>document.addEventListener("DOMContentLoaded",function(){var a=document.querySelector("#login h1 a"); if(a){a.innerHTML=""; var img=new Image(); img.id="login-custom-logo"; img.alt=document.title||"Logo"; img.src="'.esc_js($logo).'"; a.appendChild(img);} });</script>';
 }, 20);
 
 /* Crédito bajo selector de idioma */
 add_action('login_footer', function() {
     if ( ! get_option(PREMIERO_OPT_LOGIN_CREDIT, true) ) return; ?>
-    <div id="premiero-login-credit" style="margin:12px auto 24px; text-align:center; opacity:.9;">
+    <div id="login-custom-credit" style="margin:12px auto 24px; text-align:center; opacity:.9;">
         <?php if ( premiero_is_white_label() ): ?>
             <small>Desarrollado por <?php echo esc_html( premiero_get_brand_name() ); ?></small>
         <?php else: ?>
@@ -2620,7 +2863,7 @@ add_action('login_footer', function() {
         <?php endif; ?>
     </div>
     <script>(function(){
-        var credit=document.getElementById('premiero-login-credit');
+        var credit=document.getElementById('login-custom-credit');
         var sw=document.getElementById('language-switcher');
         if(sw && sw.parentNode){ sw.parentNode.insertBefore(credit, sw.nextSibling); }
     })();</script>
