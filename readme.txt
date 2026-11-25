@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.9.1
+Stable tag: 3.9.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -82,7 +82,7 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 
 == Changelog ==
 
-= 3.9.1 =
+= 3.9.2 =
 
 * Nueva pestaña «Usuarios»: restricciones de acceso para los administradores que no tienen acceso total. Desactivadas por defecto.
 * Lista todos los elementos del menú de administración, con sus subelementos, el plugin de origen y si están agrupados. Se detectan solos, sin listas escritas a mano, y se pueden reescanear.
@@ -107,6 +107,9 @@ No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperació
 * Botón «Ver web» junto a «Añadir», que abre la portada (o la URL que se indique) en una pestaña nueva.
 * Elementos de la barra superior del preset configurables: se elige cuáles mostrar de los que añaden WordPress y los plugins (detectados al cargar la barra) y se pueden añadir enlaces personalizados.
 * Usuarios: los administradores restringidos no ven en la barra superior los enlaces a pantallas que tienen bloqueadas, ni en el admin ni viendo la web.
+* Usuarios: el perfil propio y el menú de la cuenta (editar perfil y cerrar sesión) están siempre disponibles, aunque se oculte «Usuarios».
+* Barra superior del preset: la cuenta queda siempre visible a la derecha aunque haya muchos elementos; los que no caben quedan por debajo.
+* Barra superior del preset: iconos y etiquetas de otros plugins (Rank Math, Elementor) y el buscador alineados y legibles.
 * Login normal: opción «Formulario moderno» con el estilo del formulario del Hub, conservando el logo y el fondo, y con color y texto del botón personalizables.
 
 = 3.8.7 =

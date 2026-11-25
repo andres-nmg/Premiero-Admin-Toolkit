@@ -897,7 +897,28 @@ CSS;
 			. '#wpadminbar .ab-top-menu>li:not(#wp-admin-bar-hubui-brand):not(#wp-admin-bar-hubui-collapse):not(#wp-admin-bar-new-content):not(#wp-admin-bar-hubui-view)>.ab-item{display:flex;align-items:center;gap:6px}'
 			. '#wpadminbar .ab-top-menu>li:not(#wp-admin-bar-hubui-brand):not(#wp-admin-bar-hubui-collapse):not(#wp-admin-bar-new-content):not(#wp-admin-bar-hubui-view)>.ab-item:before,'
 			. '#wpadminbar .ab-top-menu>li:not(#wp-admin-bar-hubui-brand):not(#wp-admin-bar-hubui-collapse):not(#wp-admin-bar-new-content):not(#wp-admin-bar-hubui-view)>.ab-item>.ab-icon{float:none;position:static;margin:0;padding:0;top:auto;line-height:1}'
-			. '#wpadminbar .ab-top-menu>li:not(#wp-admin-bar-hubui-brand):not(#wp-admin-bar-hubui-collapse):not(#wp-admin-bar-new-content):not(#wp-admin-bar-hubui-view)>.ab-item>.ab-icon:before{position:static;top:auto;padding:0}';
+			. '#wpadminbar .ab-top-menu>li:not(#wp-admin-bar-hubui-brand):not(#wp-admin-bar-hubui-collapse):not(#wp-admin-bar-new-content):not(#wp-admin-bar-hubui-view)>.ab-item>.ab-icon:before{position:static;top:auto;padding:0}'
+			// Iconos que los plugins desplazan con "top" pensando en la barra de 32 px: aquí ya van centrados.
+			. '#wpadminbar .ab-top-menu>li:not(#wp-admin-bar-hubui-brand):not(#wp-admin-bar-hubui-collapse):not(#wp-admin-bar-new-content):not(#wp-admin-bar-hubui-view):not(#wp-admin-bar-my-account)>.ab-item>span{top:auto}'
+			// Buscar (viendo la web): la lupa se centra en vertical.
+			. '#wpadminbar #adminbarsearch:before{top:50%;transform:translateY(-50%)}'
+			// Rank Math: icono en gris claro pensado para fondo oscuro.
+			. '#wpadminbar #wp-admin-bar-rank-math .rank-math-icon{display:inline-flex;align-items:center;top:auto;padding-right:0}'
+			. '#wpadminbar #wp-admin-bar-rank-math .rank-math-icon svg{fill:var(--hubui-muted);height:20px;vertical-align:middle}'
+			. '#wpadminbar #wp-admin-bar-rank-math:hover .rank-math-icon svg{fill:var(--hubui-text)}'
+			// Elementor: etiqueta de tipo (Header, Footer, Sitio…) con fondo oscuro fijo y texto heredado.
+			. '#wpadminbar #wp-admin-bar-elementor_edit_page .elementor-edit-link-type{background:var(--hubui-tint-solid);color:var(--hubui-muted)!important;border-radius:6px;font-weight:600}'
+			/*
+			 * La zona de la derecha (cuenta, buscar) siempre a la derecha y en una línea. Si la izquierda no
+			 * cabe, sus últimos elementos quedan por debajo en vez de empujar la cuenta fuera de la barra.
+			 * WordPress da z-index 99999 a la zona izquierda: la derecha va por encima.
+			 */
+			. '@media (min-width:783px){'
+			. '#wpadminbar #wp-toolbar.quicklinks{display:flex;flex-wrap:nowrap;align-items:flex-start}'
+			. '#wpadminbar #wp-toolbar>#wp-admin-bar-root-default{display:flex;flex:1 1 auto;flex-wrap:nowrap;min-width:0;float:none}'
+			. '#wpadminbar #wp-toolbar>#wp-admin-bar-top-secondary{display:flex;flex-direction:row-reverse;flex:0 0 auto;flex-wrap:nowrap;margin-left:auto;float:none;position:relative;z-index:100000;background:#fff}'
+			. '#wpadminbar #wp-toolbar>ul>li{float:none;flex:0 0 auto}'
+			. '}';
 	}
 
 	/** Botón "Ver web": mismo formato que "Añadir", con icono de enlace externo. */

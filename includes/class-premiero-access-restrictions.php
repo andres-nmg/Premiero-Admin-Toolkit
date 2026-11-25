@@ -107,13 +107,14 @@ final class Premiero_Access_Restrictions {
 	}
 
 	/**
-	 * Slugs que nunca se pueden ocultar: el Escritorio, que es la pantalla de
-	 * entrada tras iniciar sesión. El menú del toolkit sí se puede ocultar: las
-	 * restricciones nunca afectan a los usuarios con acceso total, que siempre
-	 * conservan esta pestaña para deshacer los cambios.
+	 * Slugs que nunca se pueden ocultar ni bloquear: el Escritorio, que es la
+	 * pantalla de entrada tras iniciar sesión, y el perfil propio, para que
+	 * cualquier usuario pueda editar su cuenta aunque no vea "Usuarios". El menú
+	 * del toolkit sí se puede ocultar: las restricciones nunca afectan a los
+	 * usuarios con acceso total, que siempre conservan esta pestaña.
 	 */
 	private static function protected_slugs() {
-		return array( 'index.php' );
+		return array( 'index.php', 'profile.php' );
 	}
 
 	/**
@@ -845,8 +846,23 @@ final class Premiero_Access_Restrictions {
 				$children[ $node->parent ][] = $node->id;
 			}
 		}
+		// El menú de la cuenta nunca se toca: editar el perfil y cerrar sesión siempre disponibles.
+		$account = array( 'my-account' => true );
+		do {
+			$grown = false;
+			foreach ( $nodes as $node ) {
+				if ( ! empty( $node->parent ) && isset( $account[ $node->parent ] ) && ! isset( $account[ $node->id ] ) ) {
+					$account[ $node->id ] = true;
+					$grown                = true;
+				}
+			}
+		} while ( $grown );
+
 		$removed = array();
 		foreach ( $nodes as $node ) {
+			if ( isset( $account[ $node->id ] ) ) {
+				continue;
+			}
 			if ( empty( $node->group ) && ! empty( $node->href ) && self::url_is_blocked_for_current_user( $node->href ) ) {
 				$removed[ $node->id ] = true;
 			}
@@ -855,7 +871,7 @@ final class Premiero_Access_Restrictions {
 		do {
 			$changed = false;
 			foreach ( $nodes as $node ) {
-				if ( isset( $removed[ $node->id ] ) ) {
+				if ( isset( $removed[ $node->id ] ) || isset( $account[ $node->id ] ) ) {
 					continue;
 				}
 				if ( ! empty( $node->parent ) && isset( $removed[ $node->parent ] ) ) {
