@@ -204,7 +204,26 @@ final class Premiero_Admin_Appearance {
 
 		if ( 'reset' === sanitize_key( wp_unslash( $_POST['premiero_appearance_submit'] ) ) ) {
 			delete_option( self::OPTION );
+			Premiero_UI_Preset::save( 'admin', false );
 			return 'reset';
+		}
+
+		// "Activar Hub" y "Activar personalización" son excluyentes: el preset manda.
+		$hub = ! empty( $_POST['premiero_ui_preset_admin'] );
+		Premiero_UI_Preset::save( 'admin', $hub );
+
+		// Barra superior del Hub. Las opciones que no se mostraron (plugin desactivado) se conservan.
+		if ( isset( $_POST['premiero_ui_preset_known'] ) ) {
+			$known   = array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['premiero_ui_preset_known'] ) );
+			$checked = array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['premiero_ui_preset_new_items'] ?? array() ) );
+			$kept    = array_diff( Premiero_UI_Preset::selected_new_items(), $known );
+			$url     = isset( $_POST['premiero_ui_preset_site_url'] ) ? sanitize_text_field( wp_unslash( $_POST['premiero_ui_preset_site_url'] ) ) : '';
+			// Elementos de la barra: se guardan los ocultos; los que no se mostraron conservan su estado.
+			$bar_known   = array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['premiero_ui_preset_bar_known'] ?? array() ) );
+			$bar_visible = array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['premiero_ui_preset_bar_visible'] ?? array() ) );
+			$bar_hidden  = array_merge( array_diff( Premiero_UI_Preset::settings()['bar_hidden'], $bar_known ), array_diff( $bar_known, $bar_visible ) );
+			$links       = isset( $_POST['premiero_ui_preset_links'] ) && is_array( $_POST['premiero_ui_preset_links'] ) ? wp_unslash( $_POST['premiero_ui_preset_links'] ) : array();
+			Premiero_UI_Preset::save_admin_bar( array_merge( $kept, array_intersect( $checked, $known ) ), $url, $bar_hidden, $links );
 		}
 
 		$input = isset( $_POST[ self::OPTION ] ) && is_array( $_POST[ self::OPTION ] )
@@ -213,7 +232,7 @@ final class Premiero_Admin_Appearance {
 		$mode  = isset( $input['mode'] ) && 'dark' === sanitize_key( $input['mode'] ) ? 'dark' : 'custom';
 		$preset = 'custom' === $mode && isset( $input['preset'] ) && 'premiero' === sanitize_key( $input['preset'] ) ? 'premiero' : 'custom';
 		$clean = array(
-			'enabled' => empty( $input['enabled'] ) ? 0 : 1,
+			'enabled' => ( $hub || empty( $input['enabled'] ) ) ? 0 : 1,
 			'mode'    => $mode,
 			'preset'  => $preset,
 			'body_font'    => self::sanitize_font( isset( $input['body_font'] ) ? $input['body_font'] : 'system' ),
@@ -237,7 +256,7 @@ final class Premiero_Admin_Appearance {
 	 */
 	public static function body_classes( $classes ) {
 		$settings = self::get_settings();
-		if ( empty( $settings['enabled'] ) ) {
+		if ( empty( $settings['enabled'] ) || Premiero_UI_Preset::admin_enabled() ) {
 			return $classes;
 		}
 
@@ -257,7 +276,7 @@ final class Premiero_Admin_Appearance {
 	 */
 	public static function enqueue_styles() {
 		$settings = self::get_settings();
-		if ( empty( $settings['enabled'] ) ) {
+		if ( empty( $settings['enabled'] ) || Premiero_UI_Preset::admin_enabled() ) {
 			return;
 		}
 
@@ -336,6 +355,124 @@ final class Premiero_Admin_Appearance {
 							<small>Al desactivarla, WordPress recupera inmediatamente su aspecto original.</small>
 						</span>
 					</label>
+					<label class="premiero-appearance-toggle premiero-appearance-hub">
+						<input type="checkbox" name="premiero_ui_preset_admin" value="1" <?php checked( Premiero_UI_Preset::admin_enabled() ); ?>>
+						<span>
+							<strong>Activar Hub</strong>
+							<small>Preset completo de panel de gestión: menú lateral con tarjetas, barra superior limpia, avatares con inicial y escritorio sin noticias de WordPress. Sustituye a la personalización; los colores y tipografías de abajo no se aplican mientras esté activo.</small>
+						</span>
+					</label>
+					<script>
+					(function(){
+						var custom = document.querySelector('input[name="<?php echo esc_js( self::OPTION ); ?>[enabled]"]');
+						var hub = document.querySelector('input[name="premiero_ui_preset_admin"]');
+						if ( ! custom || ! hub ) return;
+						var sections = function(){ return document.querySelectorAll('.premiero-appearance-form .premiero-appearance-section:not(:first-of-type):not(#premiero-appearance-hub-options), .premiero-appearance-preview'); };
+						function sync(){
+							sections().forEach(function(section){ section.style.opacity = hub.checked ? '.45' : ''; });
+							var options = document.getElementById('premiero-appearance-hub-options');
+							if ( options ) options.hidden = ! hub.checked;
+						}
+						custom.addEventListener('change', function(){ if ( custom.checked ) { hub.checked = false; } sync(); });
+						hub.addEventListener('change', function(){ if ( hub.checked ) { custom.checked = false; custom.dispatchEvent(new Event('change')); } sync(); });
+						document.addEventListener('DOMContentLoaded', sync);
+						sync();
+					})();
+					</script>
+				</section>
+
+				<?php
+				$hub_candidates = Premiero_UI_Preset::new_item_candidates();
+				$hub_selected   = Premiero_UI_Preset::selected_new_items();
+				// Primero las elegidas, en su orden; después el resto.
+				$hub_order = array_merge( array_intersect( $hub_selected, array_keys( $hub_candidates ) ), array_diff( array_keys( $hub_candidates ), $hub_selected ) );
+				$hub_url   = Premiero_UI_Preset::settings()['site_url'];
+				?>
+				<section class="premiero-appearance-section" id="premiero-appearance-hub-options" <?php echo Premiero_UI_Preset::admin_enabled() ? '' : 'hidden'; ?>>
+					<h2>Barra superior del Hub</h2>
+					<p>Elige qué se puede crear desde el botón «Añadir» y a dónde lleva el botón «Ver web». La lista se detecta de lo que hay instalado.</p>
+					<h3 class="premiero-hub-subtitle">Botón «Añadir»</h3>
+					<div class="premiero-access-users premiero-hub-new-items">
+						<?php foreach ( $hub_order as $key ) : ?>
+							<?php $item = $hub_candidates[ $key ]; ?>
+							<label>
+								<input type="hidden" name="premiero_ui_preset_known[]" value="<?php echo esc_attr( $key ); ?>">
+								<input type="checkbox" name="premiero_ui_preset_new_items[]" value="<?php echo esc_attr( $key ); ?>" <?php checked( in_array( $key, $hub_selected, true ) ); ?>>
+								<span>
+									<strong><?php echo esc_html( $item['label'] ); ?></strong>
+									<small><?php echo esc_html( $item['detail'] ); ?></small>
+								</span>
+							</label>
+						<?php endforeach; ?>
+					</div>
+					<p class="description">Solo aparecen a cada usuario las opciones que puede usar. Si no marcas ninguna, el botón desaparece.</p>
+					<h3 class="premiero-hub-subtitle">Botón «Ver web»</h3>
+					<input type="url" class="regular-text" name="premiero_ui_preset_site_url" value="<?php echo esc_attr( $hub_url ); ?>" placeholder="<?php echo esc_attr( home_url( '/' ) ); ?>">
+					<p class="description">Se abre en una pestaña nueva. Déjalo vacío para usar la portada de esta web.</p>
+
+					<?php
+					$hub_seen   = Premiero_UI_Preset::seen_bar_nodes();
+					$hub_hidden = Premiero_UI_Preset::settings()['bar_hidden'];
+					$hub_links  = Premiero_UI_Preset::settings()['links'];
+					?>
+					<h3 class="premiero-hub-subtitle">Elementos de la barra</h3>
+					<?php if ( empty( $hub_seen ) ) : ?>
+						<p class="description">Todavía no se ha detectado ninguno. Aparecen aquí al cargar cualquier pantalla con el Hub activo; los que solo salen viendo la web (por ejemplo, «Editar con Elementor») aparecen después de visitar una página.</p>
+					<?php else : ?>
+						<div class="premiero-access-users premiero-hub-new-items">
+							<?php foreach ( $hub_seen as $node_id => $node_title ) : ?>
+								<label>
+									<input type="hidden" name="premiero_ui_preset_bar_known[]" value="<?php echo esc_attr( $node_id ); ?>">
+									<input type="checkbox" name="premiero_ui_preset_bar_visible[]" value="<?php echo esc_attr( $node_id ); ?>" <?php checked( ! in_array( (string) $node_id, $hub_hidden, true ) ); ?>>
+									<span>
+										<strong><?php echo esc_html( $node_title ); ?></strong>
+										<small><?php echo esc_html( $node_id ); ?></small>
+									</span>
+								</label>
+							<?php endforeach; ?>
+						</div>
+						<p class="description">Lo que añaden WordPress y los plugins a la barra superior, detectado al cargarla. Desmarca lo que no quieras mostrar. Lo que un usuario no puede ver (pestaña Usuarios) nunca le aparece.</p>
+					<?php endif; ?>
+
+					<h3 class="premiero-hub-subtitle">Enlaces personalizados</h3>
+					<div class="premiero-hub-links" id="premiero-hub-links">
+						<?php
+						$hub_rows = $hub_links ? $hub_links : array( array( 'label' => '', 'url' => '', 'new' => 0 ) );
+						foreach ( array_values( $hub_rows ) as $i => $link ) :
+							?>
+							<div class="premiero-hub-link">
+								<input type="text" name="premiero_ui_preset_links[<?php echo (int) $i; ?>][label]" value="<?php echo esc_attr( $link['label'] ); ?>" placeholder="Texto">
+								<input type="url" name="premiero_ui_preset_links[<?php echo (int) $i; ?>][url]" value="<?php echo esc_attr( $link['url'] ); ?>" placeholder="https://">
+								<label><input type="checkbox" name="premiero_ui_preset_links[<?php echo (int) $i; ?>][new]" value="1" <?php checked( ! empty( $link['new'] ) ); ?>> Pestaña nueva</label>
+								<button type="button" class="button-link premiero-hub-link-remove">Quitar</button>
+							</div>
+						<?php endforeach; ?>
+					</div>
+					<p><button type="button" class="button" id="premiero-hub-link-add">Añadir enlace</button></p>
+					<p class="description">Aparecen en la barra superior, en el admin y viendo la web. Las filas sin texto o sin URL no se guardan.</p>
+					<script>
+					(function(){
+						var list = document.getElementById('premiero-hub-links');
+						var add = document.getElementById('premiero-hub-link-add');
+						if ( ! list || ! add ) return;
+						var next = list.children.length;
+						add.addEventListener('click', function(){
+							var row = list.firstElementChild.cloneNode(true);
+							row.querySelectorAll('input').forEach(function(input){
+								input.name = input.name.replace(/\[\d+\]/, '[' + next + ']');
+								if ( input.type === 'checkbox' ) { input.checked = false; } else { input.value = ''; }
+							});
+							next++;
+							list.appendChild(row);
+							row.querySelector('input').focus();
+						});
+						list.addEventListener('click', function(event){
+							if ( ! event.target.classList.contains('premiero-hub-link-remove') ) return;
+							var row = event.target.closest('.premiero-hub-link');
+							if ( list.children.length > 1 ) { row.remove(); } else { row.querySelectorAll('input').forEach(function(input){ if ( input.type === 'checkbox' ) { input.checked = false; } else { input.value = ''; } }); }
+						});
+					})();
+					</script>
 				</section>
 
 				<section class="premiero-appearance-section">

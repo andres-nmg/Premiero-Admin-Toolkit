@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.8.7
+Stable tag: 3.9.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -81,6 +81,33 @@ Si el plugin Redirection está activo, en Redirection (debe tener su asistente c
 No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y limita ese email a uno al día por defecto. El aviso va ligado a ese email y no funciona en multisite. Fuera del admin se avisa de cualquier fatal que ocurra después de cargar los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
 
 == Changelog ==
+
+= 3.9.1 =
+
+* Nueva pestaña «Usuarios»: restricciones de acceso para los administradores que no tienen acceso total. Desactivadas por defecto.
+* Lista todos los elementos del menú de administración, con sus subelementos, el plugin de origen y si están agrupados. Se detectan solos, sin listas escritas a mano, y se pueden reescanear.
+* Los elementos marcados desaparecen del menú y sus URLs directas responden con un 403. Ocultar un elemento oculta y bloquea también sus subelementos.
+* Lista todos los plugins instalados. Los marcados desaparecen de la lista de Plugins y sus acciones por URL (activar, desactivar, borrar, actualizar y editar) quedan bloqueadas.
+* Opción para retirar a los administradores restringidos las capacidades de instalar, activar, actualizar, borrar y editar plugins, sin tocar las de temas.
+* Campo de slugs adicionales a ocultar, uno por línea.
+* Protecciones contra quedarse sin acceso: no se puede activar sin usuarios con acceso total, quien guarda debe seguir en la lista y, si ninguno de los usuarios elegidos sigue siendo administrador, las restricciones dejan de aplicarse.
+* El menú del toolkit también se puede ocultar a los administradores restringidos. Para ellos, lo agrupado dentro vuelve a su sitio original del menú.
+* No afecta a otros roles, al cron, a WP-CLI ni a la API REST.
+* Pestaña «Menú» renovada con el mismo aspecto: muestra los elementos con sus subelementos y su origen, con buscador, filtros y botón para reescanear.
+* Se puede agrupar un subelemento suelto (por ejemplo, una página de ajustes de un plugin) sin mover su elemento padre. En su sitio original queda oculto.
+* Un elemento agrupado entero muestra sus subelementos en un panel desplegable al pasar el ratón. En el móvil se muestran debajo.
+* Los nombres personalizados se aplican también a los subelementos.
+* Al abrir una pantalla agrupada, se resalta dentro del menú del toolkit.
+* Los cambios del menú se ven nada más guardar, sin recargar la página.
+* Los elementos agrupados de un plugin desactivado se conservan en los ajustes sin crear enlaces vacíos.
+* Nuevo preset «Hub» en Apariencia: panel de gestión claro con menú lateral en tarjetas, barra superior limpia con plegado del menú, avatares con inicial, escritorio sin noticias de WordPress y botón «Añadir» con accesos directos. Es alternativo a la personalización actual.
+* Nuevo preset «Hub» en Login: pantalla de acceso de dos columnas con panel de marca. El crédito sigue su casilla y usa el nombre de Identidad.
+* Las tipografías del preset van incluidas en el plugin, sin conexiones externas.
+* Botón «Añadir» del preset configurable: se elige qué crear (entradas, páginas, productos, tipos de contenido de otros plugins, medios o usuarios) de una lista detectada de lo instalado.
+* Botón «Ver web» junto a «Añadir», que abre la portada (o la URL que se indique) en una pestaña nueva.
+* Elementos de la barra superior del preset configurables: se elige cuáles mostrar de los que añaden WordPress y los plugins (detectados al cargar la barra) y se pueden añadir enlaces personalizados.
+* Usuarios: los administradores restringidos no ven en la barra superior los enlaces a pantallas que tienen bloqueadas, ni en el admin ni viendo la web.
+* Login normal: opción «Formulario moderno» con el estilo del formulario del Hub, conservando el logo y el fondo, y con color y texto del botón personalizables.
 
 = 3.8.7 =
 

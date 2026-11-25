@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.8.7
+ * Version:     3.9.1
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -37,7 +37,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.8.7');
+define('PREMIERO_ATK_VER', '3.9.1');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_FILE', __FILE__);
@@ -65,6 +65,10 @@ const PREMIERO_OPT_LOGIN_BG       = 'premiero_login_bg';        // string hex, s
 const PREMIERO_OPT_LOGIN_CREDIT   = 'premiero_login_credit';    // bool
 const PREMIERO_OPT_LOGIN_LOGO_ID  = 'premiero_login_logo_id';   // attachment id (int)
 const PREMIERO_OPT_LOGIN_LOGO_W   = 'premiero_login_logo_w';    // ancho px (int)
+const PREMIERO_OPT_LOGIN_MODERN   = 'premiero_login_modern';    // bool: formulario con el estilo del Hub
+const PREMIERO_OPT_LOGIN_BTN_BG   = 'premiero_login_btn_bg';    // hex: fondo del botón de acceso
+const PREMIERO_OPT_LOGIN_BTN_TEXT = 'premiero_login_btn_text';  // hex: texto del botón de acceso
+const PREMIERO_OPT_LOGIN_BTN_LABEL = 'premiero_login_btn_label'; // texto del botón de acceso
 
 /** Identidad personalizada */
 const PREMIERO_OPT_WHITE_LABEL_ENABLED = 'premiero_white_label_enabled';
@@ -73,6 +77,9 @@ const PREMIERO_OPT_WHITE_LABEL_LOGO_ID = 'premiero_white_label_logo_id';
 
 /** Diagnóstico avanzado */
 const PREMIERO_OPT_DIAG_ENABLED = 'premiero_diag_enabled';
+
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-ui-preset.php';
+Premiero_UI_Preset::init();
 
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-admin-appearance.php';
 Premiero_Admin_Appearance::init();
@@ -93,6 +100,12 @@ register_deactivation_hook( __FILE__, [ 'Premiero_Command_Client', 'deactivate' 
 
 require_once PREMIERO_ATK_DIR . 'includes/class-premiero-admin-notices.php';
 Premiero_Admin_Notices::init();
+
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-menu-groups.php';
+Premiero_Menu_Groups::init();
+
+require_once PREMIERO_ATK_DIR . 'includes/class-premiero-access-restrictions.php';
+Premiero_Access_Restrictions::init();
 
 require_once PREMIERO_ATK_DIR . 'includes/telegram/class-premiero-telegram.php';
 require_once PREMIERO_ATK_DIR . 'includes/telegram/class-premiero-telegram-sender.php';
@@ -1553,96 +1566,7 @@ add_action('wp_footer', function() {
     if ( $body ) echo "\n{$body}\n";
 }, 1);
 
-/* ====================== RENOMBRAR TOP-LEVEL NO AGRUPADOS ====================== */
-add_action('admin_menu', function() {
-    $labels  = (array) get_option(PREMIERO_OPT_MENU_LABELS, []);
-    if ( empty($labels) ) return;
-
-    $grouped = (array) get_option(PREMIERO_OPT_MENU_GROUP, []);
-
-    global $menu;
-    if ( ! is_array($menu) ) return;
-
-    foreach ( $menu as $idx => $m ) {
-        if ( empty($m[2]) ) continue;
-        $slug = (string) $m[2];
-        if ( $slug === PREMIERO_ATK_SLUG || in_array($slug, $grouped, true) ) continue;
-
-        if ( isset($labels[$slug]) && $labels[$slug] !== '' ) {
-            $plain = wp_strip_all_tags( $labels[$slug] );
-            $menu[$idx][0] = $plain;
-            if ( isset($menu[$idx][3]) ) $menu[$idx][3] = $plain;
-        }
-    }
-}, 998);
-
-/* ====================== AGRUPACIÓN DE MENÚS BAJO PREMIERO ====================== */
-add_action('admin_menu', function() {
-
-    $grouped = (array) get_option(PREMIERO_OPT_MENU_GROUP, []);
-    $labels  = (array) get_option(PREMIERO_OPT_MENU_LABELS, []);
-
-    if ( empty($grouped) ) return;
-
-    // Mapa actual de títulos/capacidades
-    global $menu;
-    $map = []; // slug => [title, cap]
-    foreach ( (array) $menu as $m ) {
-        if ( !empty($m[2]) ) {
-            $map[$m[2]] = [
-                'title' => wp_strip_all_tags($m[0]),
-                'cap'   => !empty($m[1]) ? $m[1] : 'manage_options'
-            ];
-        }
-    }
-
-    // 1) Separador visual bajo "Ajustes" (espacio sin línea ni texto)
-    add_submenu_page(
-        PREMIERO_ATK_SLUG,
-        '',
-        '',
-        'manage_options',
-        'premiero-separator',
-        function(){ /* vacío */ }
-    );
-
-    // 2) Mover seleccionados bajo Premiero
-    foreach ( $grouped as $slug ) {
-        if ( ! $slug || $slug === PREMIERO_ATK_SLUG ) continue;
-
-        // Oculta del menú principal
-        remove_menu_page($slug);
-
-        // Título/capacidad
-        $orig_title = isset($map[$slug]['title']) ? $map[$slug]['title'] : $slug;
-        $cap        = isset($map[$slug]['cap'])   ? $map[$slug]['cap']   : 'manage_options';
-
-        // Label personalizado si existe (permitimos HTML básico dentro de Premiero)
-        $menu_title = isset($labels[$slug]) && $labels[$slug] !== '' ? $labels[$slug] : $orig_title;
-
-        add_submenu_page(
-            PREMIERO_ATK_SLUG,
-            wp_strip_all_tags( $menu_title ), // page title
-            $menu_title,                       // menu title
-            $cap,
-            $slug
-        );
-    }
-
-}, 999);
-
-/* CSS del separador (sin texto ni línea: solo espacio) */
-add_action('admin_head', function(){
-    echo '<style>
-    #adminmenu .wp-submenu a[href="admin.php?page=premiero-separator"]{
-        cursor: default !important;
-        pointer-events: none !important;
-        height:10px;
-        display:block;
-        content:"";
-    }
-    </style>';
-});
+/* El renombrado y la agrupación del menú están en includes/class-premiero-menu-groups.php */
 
 /* ====================== UI: Cabecera y Tabs ====================== */
 function premiero_admin_header($active_tab = 'info') {
@@ -1652,6 +1576,7 @@ function premiero_admin_header($active_tab = 'info') {
         'info'       => ['Acerca de', 'Autoría, licencia, actualizaciones, soporte y acceso rápido.'],
         'code'       => ['Código', 'Gestiona PHP, HTML y CSS personalizado desde un único lugar.'],
         'menuwp'     => ['Menú', 'Agrupa y renombra elementos del menú de administración.'],
+        'access'     => ['Usuarios', 'Oculta menús y plugins a los administradores sin acceso total.'],
         'repository' => ['Repositorio', 'Instala plugins y temas locales o desde WordPress.org.'],
         'adminui'    => ['Login', 'Personaliza la pantalla de acceso y su crédito.'],
         'branding'   => ['Identidad', 'Adapta el nombre y el logo del plugin para un cliente.'],
@@ -1688,6 +1613,11 @@ function premiero_tabs_nav($active) {
     $tabs = [
         'info'       => 'Acerca de',
         'menuwp'     => 'Menú',
+    ];
+    if ( Premiero_Access_Restrictions::can_manage() ) {
+        $tabs['access'] = 'Usuarios';
+    }
+    $tabs += [
         'notices'    => 'Avisos',
         'telegram'   => 'Telegram',
         'code'       => 'Código',
@@ -1837,6 +1767,37 @@ add_action('admin_enqueue_scripts', function($hook){
     .premiero-notices-footer-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
     .premiero-notices-empty{display:flex;flex-direction:column;gap:5px;padding:28px;border:1px dashed #c3c4c7;border-radius:6px;text-align:center;background:#f6f7f7}
     .premiero-notices-empty span{color:#646970}
+    .premiero-access{max-width:1180px;padding-right:20px;color:#1d2327}
+    .premiero-access>.notice{margin:0 0 12px!important}
+    .premiero-access .premiero-appearance-form{margin-top:16px}
+    .premiero-access-users{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+    .premiero-access-users label{display:flex;align-items:flex-start;gap:9px;padding:12px 14px;border:1px solid #dcdcde;border-radius:7px;background:#fff;cursor:pointer}
+    .premiero-access-users label:has(input:checked){border-color:var(--premiero-admin-accent,#8a2c0d);box-shadow:0 0 0 1px var(--premiero-admin-accent,#8a2c0d)}
+    .premiero-access-users input{flex:0 0 auto;margin:2px 0 0}
+    .premiero-access-users strong,.premiero-access-users small{display:block}
+    .premiero-access-users small{margin-top:3px;color:#646970}
+    .premiero-access-table{min-width:760px}
+    .premiero-access-table td{vertical-align:middle}
+    .premiero-access-table th:last-child,.premiero-access-table td:last-child{width:170px}
+    .premiero-access-table code{white-space:normal;overflow-wrap:anywhere}
+    .premiero-access-table td small{display:block;margin-top:3px;color:#8c8f94}
+    .premiero-access-table tr.premiero-access-parent td{border-top:1px solid #f0f0f1}
+    .premiero-access-table tr.premiero-access-parent td:first-child{font-weight:600}
+    .premiero-access-table tr.premiero-access-child td:first-child{padding-left:34px;color:#50575e}
+    .premiero-access-table tr.premiero-access-child td:first-child:before{content:"— ";color:#8c8f94}
+    .premiero-access-table tr.is-inherited td{opacity:.55}
+    .premiero-access-inherited{display:none!important}
+    .premiero-access-table tr.is-inherited .premiero-access-inherited{display:block!important;color:var(--premiero-admin-accent,#8a2c0d)}
+    .premiero-access-plugins td:first-child strong{display:block}
+    .premiero-access-lock{margin-top:16px}
+    .premiero-login-hub{margin:0 0 12px}
+    .premiero-appearance-hub{margin-top:10px}
+    .premiero-hub-subtitle{margin:18px 0 10px;font-size:13px}
+    .premiero-hub-links{display:grid;gap:8px}
+    .premiero-hub-link{display:grid;grid-template-columns:minmax(120px,1fr) minmax(180px,2fr) auto auto;align-items:center;gap:8px}
+    .premiero-hub-link input[type=text],.premiero-hub-link input[type=url]{width:100%;max-width:none}
+    .premiero-hub-link label{white-space:nowrap}
+    @media (max-width:782px){.premiero-hub-link{grid-template-columns:1fr}}
     .premiero-telegram{max-width:1180px;padding-right:20px;color:#1d2327}
     .premiero-telegram .premiero-appearance-form{margin-top:16px}
     .premiero-telegram>.notice{margin:0 0 12px!important}
@@ -2153,28 +2114,12 @@ function premiero_render_settings_page() {
         update_option(PREMIERO_OPT_LOGIN_LOGO_ID, intval($_POST[PREMIERO_OPT_LOGIN_LOGO_ID] ?? 0));
         $w = max(50, intval($_POST[PREMIERO_OPT_LOGIN_LOGO_W] ?? 260));
         update_option(PREMIERO_OPT_LOGIN_LOGO_W, $w);
+        Premiero_UI_Preset::save( 'login', ! empty( $_POST['premiero_ui_preset_login'] ) );
+        update_option(PREMIERO_OPT_LOGIN_MODERN, isset($_POST[PREMIERO_OPT_LOGIN_MODERN]) ? 1 : 0);
+        update_option(PREMIERO_OPT_LOGIN_BTN_BG, (string) sanitize_hex_color( wp_unslash( $_POST[PREMIERO_OPT_LOGIN_BTN_BG] ?? '' ) ));
+        update_option(PREMIERO_OPT_LOGIN_BTN_TEXT, (string) sanitize_hex_color( wp_unslash( $_POST[PREMIERO_OPT_LOGIN_BTN_TEXT] ?? '' ) ));
+        update_option(PREMIERO_OPT_LOGIN_BTN_LABEL, sanitize_text_field( wp_unslash( $_POST[PREMIERO_OPT_LOGIN_BTN_LABEL] ?? '' ) ));
         echo '<div class="notice notice-success is-dismissible"><p>Cambios guardados.</p></div>';
-    }
-
-    /* Guardado Menú WP */
-    if ( 'menuwp' === $active && isset($_POST['premiero_menuwp_submit']) && check_admin_referer('premiero_menuwp_nonce') ) {
-        // Slugs marcados
-        $group = isset($_POST[PREMIERO_OPT_MENU_GROUP]) ? (array) $_POST[PREMIERO_OPT_MENU_GROUP] : [];
-        $group = array_values(array_unique(array_map('sanitize_text_field', $group)));
-        $group = array_filter($group, function($slug){ return $slug && $slug !== PREMIERO_ATK_SLUG; });
-        update_option(PREMIERO_OPT_MENU_GROUP, $group);
-
-        // Labels
-        $labels = isset($_POST[PREMIERO_OPT_MENU_LABELS]) ? (array) $_POST[PREMIERO_OPT_MENU_LABELS] : [];
-        $clean  = [];
-        foreach ($labels as $slug => $label) {
-            $slug  = sanitize_text_field($slug);
-            $label = wp_kses_post($label);
-            if ($slug) $clean[$slug] = $label;
-        }
-        update_option(PREMIERO_OPT_MENU_LABELS, $clean);
-
-        echo '<div class="notice notice-success is-dismissible"><p>Menú actualizado.</p></div>';
     }
 
     /* Guardado modo diagnóstico (Acerca de) */
@@ -2410,128 +2355,7 @@ function premiero_render_settings_page() {
         break;
 
         case 'menuwp':
-            $brand_name = premiero_get_brand_name();
-            // Construir lista de top-level actuales
-            global $menu;
-            $items = [];
-            if ( is_array($menu) ) {
-                foreach ( $menu as $m ) {
-                    if ( empty($m[2]) ) continue;
-                    $slug  = (string) $m[2];
-                    $title = wp_strip_all_tags($m[0]);
-                    $items[$slug] = $title ?: $slug;
-                }
-            }
-            // Opción actual
-            $selected = (array) get_option(PREMIERO_OPT_MENU_GROUP, []);
-            $labels   = (array) get_option(PREMIERO_OPT_MENU_LABELS, []);
-
-            // Asegura que aparezcan también los ya agrupados
-            foreach ($selected as $slug) {
-                if ( ! isset($items[$slug]) ) {
-                    $items[$slug] = isset($labels[$slug]) && $labels[$slug] !== '' ? wp_strip_all_tags($labels[$slug]) : $slug;
-                }
-            }
-
-            ksort($items);
-            ?>
-            <form method="post">
-                <?php wp_nonce_field('premiero_menuwp_nonce'); ?>
-                <p><strong>Menú</strong> — Marca los elementos que quieras <em>agrupar bajo <?php echo esc_html($brand_name); ?></em>. Se añadirá un separador visual entre Ajustes y los plugins agrupados. Puedes <strong>renombrar</strong> los elementos (aplica tanto dentro de <?php echo esc_html($brand_name); ?> como fuera, si no están agrupados).</p>
-                <div class="premiero-menu-toolbar">
-                    <p class="search-box">
-                        <label class="screen-reader-text" for="premiero-menu-search">Buscar elementos</label>
-                        <input type="search" id="premiero-menu-search" placeholder="Buscar por nombre o slug">
-                    </p>
-                    <button type="button" class="button premiero-menu-filter button-primary" data-filter="all">Todos</button>
-                    <button type="button" class="button premiero-menu-filter" data-filter="grouped">Agrupados</button>
-                    <button type="button" class="button premiero-menu-filter" data-filter="ungrouped">Sin agrupar</button>
-                    <button type="button" class="button" id="premiero-menu-reset-labels">Restaurar nombres</button>
-                    <span class="premiero-menu-count" aria-live="polite"></span>
-                </div>
-                <table class="premiero-menu-table">
-                    <thead><tr><th>Elemento</th><th>Slug</th><th>En <?php echo esc_html($brand_name); ?></th><th>Nombre personalizado</th></tr></thead>
-                    <tbody>
-                    <?php foreach ($items as $slug=>$title):
-                        $is_grouped = in_array($slug, $selected, true);
-                    ?>
-                        <tr data-search="<?php echo esc_attr(strtolower($title.' '.$slug)); ?>" data-grouped="<?php echo $is_grouped ? '1' : '0'; ?>">
-                            <td data-label="Elemento"><?php echo esc_html($title); ?></td>
-                            <td data-label="Slug"><code><?php echo esc_html($slug); ?></code></td>
-                            <td data-label="En <?php echo esc_attr($brand_name); ?>">
-                                <?php if ($slug === PREMIERO_ATK_SLUG): ?>
-                                    <em>(Siempre en <?php echo esc_html($brand_name); ?>)</em>
-                                <?php else: ?>
-                                    <label>
-                                        <input type="checkbox" name="<?php echo PREMIERO_OPT_MENU_GROUP; ?>[]"
-                                               value="<?php echo esc_attr($slug); ?>"
-                                            <?php checked( $is_grouped ); ?>>
-                                        Agrupar
-                                    </label>
-                                <?php endif; ?>
-                            </td>
-                            <td data-label="Nombre">
-                                <input class="premiero-label-input" type="text"
-                                       name="<?php echo PREMIERO_OPT_MENU_LABELS; ?>[<?php echo esc_attr($slug); ?>]"
-                                       value="<?php echo esc_attr( $labels[$slug] ?? '' ); ?>"
-                                       placeholder="(Opcional) Nombre personalizado">
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <div class="premiero-sticky-actions">
-                    <span class="description">Los cambios se aplicarán al guardar.</span>
-                    <?php submit_button('Guardar cambios','primary','premiero_menuwp_submit'); ?>
-                </div>
-            </form>
-            <script>
-            (function(){
-                var search = document.getElementById('premiero-menu-search');
-                var rows = Array.prototype.slice.call(document.querySelectorAll('.premiero-menu-table tbody tr'));
-                var filters = document.querySelectorAll('.premiero-menu-filter');
-                var count = document.querySelector('.premiero-menu-count');
-                var currentFilter = 'all';
-
-                function refresh(){
-                    var term = (search.value || '').toLowerCase().trim();
-                    var visible = 0;
-                    var grouped = 0;
-                    rows.forEach(function(row){
-                        var checkbox = row.querySelector('input[type="checkbox"]');
-                        var isGrouped = checkbox ? checkbox.checked : row.dataset.grouped === '1';
-                        row.dataset.grouped = isGrouped ? '1' : '0';
-                        if ( isGrouped ) grouped++;
-                        var filterMatch = currentFilter === 'all'
-                            || (currentFilter === 'grouped' && isGrouped)
-                            || (currentFilter === 'ungrouped' && !isGrouped);
-                        var show = filterMatch && (!term || row.dataset.search.indexOf(term) !== -1);
-                        row.style.display = show ? '' : 'none';
-                        if ( show ) visible++;
-                    });
-                    count.textContent = visible + ' visibles · ' + grouped + ' agrupados';
-                }
-
-                search.addEventListener('input', refresh);
-                filters.forEach(function(button){
-                    button.addEventListener('click', function(){
-                        currentFilter = button.dataset.filter;
-                        filters.forEach(function(item){ item.classList.remove('button-primary'); });
-                        button.classList.add('button-primary');
-                        refresh();
-                    });
-                });
-                rows.forEach(function(row){
-                    var checkbox = row.querySelector('input[type="checkbox"]');
-                    if ( checkbox ) checkbox.addEventListener('change', refresh);
-                });
-                document.getElementById('premiero-menu-reset-labels').addEventListener('click', function(){
-                    document.querySelectorAll('.premiero-label-input').forEach(function(input){ input.value = ''; });
-                });
-                refresh();
-            })();
-            </script>
-            <?php
+            Premiero_Menu_Groups::render_tab();
         break;
 
         case 'branding':
@@ -2688,6 +2512,10 @@ function premiero_render_settings_page() {
             Premiero_Admin_Notices::render_tab();
         break;
 
+        case 'access':
+            Premiero_Access_Restrictions::render_tab();
+        break;
+
         case 'telegram':
             Premiero_Telegram_Settings::render_tab();
         break;
@@ -2709,6 +2537,13 @@ function premiero_render_settings_page() {
             <div class="premiero-login-layout">
             <form method="post">
                 <?php wp_nonce_field('premiero_adminui_nonce'); ?>
+                <label class="premiero-appearance-toggle premiero-login-hub">
+                    <input type="checkbox" name="premiero_ui_preset_login" value="1" id="premiero-login-hub" <?php checked( Premiero_UI_Preset::login_enabled() ); ?>>
+                    <span>
+                        <strong>Activar Hub</strong>
+                        <small>Pantalla de acceso de dos columnas: panel de marca oscuro con el nombre del sitio y formulario en tarjeta. Sustituye al fondo y al logo de abajo; el crédito se sigue controlando con su casilla.</small>
+                    </span>
+                </label>
                 <table class="form-table" role="presentation">
                     <tr>
                         <th scope="row"><label for="<?php echo PREMIERO_OPT_LOGIN_BG; ?>">Color de fondo (solo login)</label></th>
@@ -2754,7 +2589,49 @@ function premiero_render_settings_page() {
                             </label>
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row">Formulario moderno</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="<?php echo esc_attr(PREMIERO_OPT_LOGIN_MODERN); ?>" value="1" id="premiero-login-modern" <?php checked( (bool) get_option(PREMIERO_OPT_LOGIN_MODERN, false) ); ?>>
+                                Dar al formulario de acceso el estilo del Hub (tarjeta, campos y enlaces), conservando el logo y el fondo de arriba.
+                            </label>
+                        </td>
+                    </tr>
+                    <tr class="premiero-login-modern-row">
+                        <th scope="row"><label for="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_BG); ?>">Color del botón</label></th>
+                        <td>
+                            <input type="text" name="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_BG); ?>" id="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_BG); ?>" value="<?php echo esc_attr( (string) get_option(PREMIERO_OPT_LOGIN_BTN_BG, '') ); ?>" class="regular-text premiero-login-button-color" data-default-color="#78290f">
+                            <p class="description">Vacío: el rojo de la marca.</p>
+                        </td>
+                    </tr>
+                    <tr class="premiero-login-modern-row">
+                        <th scope="row"><label for="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_TEXT); ?>">Color del texto del botón</label></th>
+                        <td>
+                            <input type="text" name="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_TEXT); ?>" id="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_TEXT); ?>" value="<?php echo esc_attr( (string) get_option(PREMIERO_OPT_LOGIN_BTN_TEXT, '') ); ?>" class="regular-text premiero-login-button-color" data-default-color="#ffffff">
+                            <p class="description">Vacío: blanco.</p>
+                        </td>
+                    </tr>
+                    <tr class="premiero-login-modern-row">
+                        <th scope="row"><label for="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_LABEL); ?>">Texto del botón</label></th>
+                        <td>
+                            <input type="text" name="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_LABEL); ?>" id="<?php echo esc_attr(PREMIERO_OPT_LOGIN_BTN_LABEL); ?>" value="<?php echo esc_attr( (string) get_option(PREMIERO_OPT_LOGIN_BTN_LABEL, '') ); ?>" class="regular-text" placeholder="Acceder">
+                            <p class="description">Vacío: el texto de WordPress («Acceder»).</p>
+                        </td>
+                    </tr>
                 </table>
+                <script>
+                jQuery(function($){
+                    if ( $.fn.wpColorPicker ) { $('.premiero-login-button-color').wpColorPicker(); }
+                    var modern = $('#premiero-login-modern'), hub = $('#premiero-login-hub');
+                    function syncModern(){
+                        $('.premiero-login-modern-row').toggle( modern.is(':checked') );
+                        // Con el Hub activo, el formulario moderno no se aplica.
+                        modern.closest('tr').add('.premiero-login-modern-row').css('opacity', hub.is(':checked') ? '.45' : '');
+                    }
+                    modern.on('change', syncModern); hub.on('change', syncModern); syncModern();
+                });
+                </script>
                 <?php submit_button('Guardar cambios','primary','premiero_adminui_submit'); ?>
             </form>
             <aside class="premiero-login-preview" id="premiero-login-live-preview" style="background:<?php echo esc_attr($login_bg ?: '#f0f0f1'); ?>">
@@ -2833,6 +2710,8 @@ function premiero_render_support_inner() { ?>
 
 /* ====================== LOGIN: aplicar color/logo ====================== */
 add_action('login_enqueue_scripts', function() {
+    // Con el preset Hub activo, la pantalla de acceso la pinta Premiero_UI_Preset.
+    if ( Premiero_UI_Preset::login_enabled() ) return;
     $logo_url = premiero_get_login_logo_url();
     if ( PREMIERO_ATK_ASSETS . 'premiero-logo.png' === $logo_url && is_readable( PREMIERO_ATK_DIR . 'assets/premiero-logo.png' ) ) {
         // Logo incrustado: la carpeta del plugin no responde a visitantes anónimos.
@@ -2854,7 +2733,8 @@ add_action('login_enqueue_scripts', function() {
 
 /* Crédito bajo selector de idioma */
 add_action('login_footer', function() {
-    if ( ! get_option(PREMIERO_OPT_LOGIN_CREDIT, true) ) return; ?>
+    // Con el preset Hub, el crédito va en el pie del panel de marca.
+    if ( ! get_option(PREMIERO_OPT_LOGIN_CREDIT, true) || Premiero_UI_Preset::login_enabled() ) return; ?>
     <div id="login-custom-credit" style="margin:12px auto 24px; text-align:center; opacity:.9;">
         <?php if ( premiero_is_white_label() ): ?>
             <small>Desarrollado por <?php echo esc_html( premiero_get_brand_name() ); ?></small>
