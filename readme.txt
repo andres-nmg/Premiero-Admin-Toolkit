@@ -3,7 +3,7 @@ Contributors: andres-nmg
 Tags: admin, tools, snippets, repository, login, dark mode, branding
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 3.9.2
+Stable tag: 3.9.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -81,6 +81,16 @@ Si el plugin Redirection está activo, en Redirection (debe tener su asistente c
 No. En `wp-admin` y en el login, WordPress solo genera el enlace de recuperación si el error viene de un plugin o un tema, y limita ese email a uno al día por defecto. El aviso va ligado a ese email y no funciona en multisite. Fuera del admin se avisa de cualquier fatal que ocurra después de cargar los mu-plugins, sin enlace de recuperación y como máximo una vez por hora para cada error.
 
 == Changelog ==
+
+= 3.9.3 =
+
+* Repositorio: Pro Elements actualizado a la versión 4.4.0.
+* Repositorio: nuevo plugin local «SEO Multilingüe» (título y meta description por idioma, slugs traducidos y sitemap con hreflang para TranslatePress y qTranslate-XT).
+* Repositorio: nuevos plugins de WordPress.org: SMTP, Yoast SEO, Rank Math SEO, Contact Form 7, Flamingo, Complianz, TranslatePress y Polylang.
+* Repositorio: «Optimización» pasa a llamarse «WP-Optimize».
+* Pestaña «Repositorio» con el mismo aspecto que «Menú» y «Usuarios»: cabecera con estado, resumen, secciones de Plugins y Temas y tablas con los plugins agrupados por categoría.
+* Buscador, filtro por estado (todos, no instalados, instalados) y contador de seleccionados.
+* «Marcar no instalados» solo marca lo que aún no está instalado y se ve con el filtro actual.
 
 = 3.9.2 =
 

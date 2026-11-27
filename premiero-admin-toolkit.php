@@ -3,7 +3,7 @@
  * Plugin Name: Premiero Admin Toolkit
  * Plugin URI:  https://github.com/andres-nmg/premiero-admin-toolkit/
  * Description: Personalización y soporte personalizado.
- * Version:     3.9.2
+ * Version:     3.9.3
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author:      Premiero
@@ -37,7 +37,7 @@ if ( defined('PREMIERO_ATK_DIR') ) {
     }
 }
 
-define('PREMIERO_ATK_VER', '3.9.2');
+define('PREMIERO_ATK_VER', '3.9.3');
 define('PREMIERO_ATK_SLUG', 'premiero-admin');
 define('PREMIERO_ATK_DIR', plugin_dir_path(__FILE__));
 define('PREMIERO_ATK_FILE', __FILE__);
@@ -419,21 +419,43 @@ class Premiero_Admin_Toolkit_Repository {
      *   CONFIGURACIÓN
      * ========================= */
 
-    /** Catálogo WP.org — por URL pública + nombre visible */
+    /** Grupos del catálogo de WP.org, en el orden en que se muestran */
+    protected function get_wporg_plugin_groups() {
+        return [
+            'builder'     => 'Constructor y diseño',
+            'seo'         => 'SEO',
+            'translation' => 'Traducción',
+            'forms'       => 'Formularios, correo y contacto',
+            'security'    => 'Seguridad, copias y privacidad',
+            'performance' => 'Rendimiento',
+            'content'     => 'Contenido y tienda',
+            'ai'          => 'IA y MCP',
+        ];
+    }
+
+    /** Catálogo WP.org — por URL pública + nombre visible + grupo */
     protected function get_wporg_plugins_catalog() {
         return [
-            [ 'name' => 'Elementor Website Builder', 'url' => 'https://es.wordpress.org/plugins/elementor/' ],
-            [ 'name' => 'Backup',                    'url' => 'https://es.wordpress.org/plugins/updraftplus/' ],
-            [ 'name' => 'WooCommerce',               'url' => 'https://es.wordpress.org/plugins/woocommerce/' ],
-            [ 'name' => 'Pods',                      'url' => 'https://es.wordpress.org/plugins/pods/' ],
-            [ 'name' => 'Optimización',              'url' => 'https://es.wordpress.org/plugins/wp-optimize/' ],
-            [ 'name' => 'Advanced Custom Fields',    'url' => 'https://es.wordpress.org/plugins/advanced-custom-fields/' ],
-            [ 'name' => 'Joinchat (WhatsApp)',       'url' => 'https://es.wordpress.org/plugins/creame-whatsapp-me/' ],
-            [ 'name' => 'Template Kit Import',       'url' => 'https://es.wordpress.org/plugins/template-kit-import/' ],
-            [ 'name' => 'Wordfence Security',        'url' => 'https://es.wordpress.org/plugins/wordfence/' ],
-            [ 'name' => 'StifLi Flex MCP',           'url' => 'https://es.wordpress.org/plugins/stifli-flex-mcp/' ],
-            [ 'name' => 'Easy MCP AI',               'url' => 'https://wordpress.org/plugins/easy-mcp-ai/' ],
-            [ 'name' => 'Greenshift',                'url' => 'https://es.wordpress.org/plugins/greenshift-animation-and-page-builder-blocks/' ],
+            [ 'name' => 'Elementor Website Builder', 'group' => 'builder',     'url' => 'https://es.wordpress.org/plugins/elementor/' ],
+            [ 'name' => 'Greenshift',                'group' => 'builder',     'url' => 'https://es.wordpress.org/plugins/greenshift-animation-and-page-builder-blocks/' ],
+            [ 'name' => 'Template Kit Import',       'group' => 'builder',     'url' => 'https://es.wordpress.org/plugins/template-kit-import/' ],
+            [ 'name' => 'Yoast SEO',                 'group' => 'seo',         'url' => 'https://es.wordpress.org/plugins/wordpress-seo/' ],
+            [ 'name' => 'Rank Math SEO',             'group' => 'seo',         'url' => 'https://es.wordpress.org/plugins/seo-by-rank-math/' ],
+            [ 'name' => 'TranslatePress',            'group' => 'translation', 'url' => 'https://es.wordpress.org/plugins/translatepress-multilingual/' ],
+            [ 'name' => 'Polylang',                  'group' => 'translation', 'url' => 'https://es.wordpress.org/plugins/polylang/' ],
+            [ 'name' => 'Contact Form 7',            'group' => 'forms',       'url' => 'https://es.wordpress.org/plugins/contact-form-7/' ],
+            [ 'name' => 'Flamingo',                  'group' => 'forms',       'url' => 'https://es.wordpress.org/plugins/flamingo/' ],
+            [ 'name' => 'SMTP',                      'group' => 'forms',       'url' => 'https://es.wordpress.org/plugins/smtp/' ],
+            [ 'name' => 'Joinchat (WhatsApp)',       'group' => 'forms',       'url' => 'https://es.wordpress.org/plugins/creame-whatsapp-me/' ],
+            [ 'name' => 'Wordfence Security',        'group' => 'security',    'url' => 'https://es.wordpress.org/plugins/wordfence/' ],
+            [ 'name' => 'Backup',                    'group' => 'security',    'url' => 'https://es.wordpress.org/plugins/updraftplus/' ],
+            [ 'name' => 'Complianz (RGPD/Cookies)',  'group' => 'security',    'url' => 'https://es.wordpress.org/plugins/complianz-gdpr/' ],
+            [ 'name' => 'WP-Optimize',               'group' => 'performance', 'url' => 'https://es.wordpress.org/plugins/wp-optimize/' ],
+            [ 'name' => 'WooCommerce',               'group' => 'content',     'url' => 'https://es.wordpress.org/plugins/woocommerce/' ],
+            [ 'name' => 'Advanced Custom Fields',    'group' => 'content',     'url' => 'https://es.wordpress.org/plugins/advanced-custom-fields/' ],
+            [ 'name' => 'Pods',                      'group' => 'content',     'url' => 'https://es.wordpress.org/plugins/pods/' ],
+            [ 'name' => 'Easy MCP AI',               'group' => 'ai',          'url' => 'https://wordpress.org/plugins/easy-mcp-ai/' ],
+            [ 'name' => 'StifLi Flex MCP',           'group' => 'ai',          'url' => 'https://es.wordpress.org/plugins/stifli-flex-mcp/' ],
         ];
     }
 
@@ -450,6 +472,7 @@ class Premiero_Admin_Toolkit_Repository {
         return [
             'all-in-one-wp-migration-with-import-master.zip' => 'Importador / Exportador',
             'pro-elements.zip'                               => 'Pro Elements',
+            'premiero-seo-multilingue.zip'                   => 'SEO Multilingüe',
         ];
     }
 
@@ -488,6 +511,7 @@ class Premiero_Admin_Toolkit_Repository {
         $map = [
             'all-in-one-wp-migration-with-import-master.zip' => 'all-in-one-wp-migration-with-import-master',
             'pro-elements.zip'                               => 'pro-elements',
+            'premiero-seo-multilingue.zip'                   => 'premiero-seo-multilingue',
         ];
         return $map[$filename] ?? '';
     }
@@ -520,19 +544,47 @@ class Premiero_Admin_Toolkit_Repository {
     }
 
     protected function render_status( $status ) {
-        $version = ! empty($status['version']) ? ' · ' . $status['version'] : '';
-        return '<span class="premiero-status premiero-status-' . esc_attr($status['state']) . '">'
-            . esc_html($status['label'] . $version)
+        $classes = [ 'active' => 'is-visible', 'installed' => 'is-installed', 'available' => 'is-hidden' ];
+        $label   = 'available' === $status['state'] ? 'No instalado' : $status['label'];
+        $version = ! empty( $status['version'] ) ? ' · ' . $status['version'] : '';
+        return '<span class="premiero-notice-state ' . esc_attr( $classes[ $status['state'] ] ?? 'is-hidden' ) . '">'
+            . esc_html( $label . $version )
             . '</span>';
     }
 
     protected function render_action_select( $name, $label ) {
-        return '<label><span class="screen-reader-text">' . esc_html($label) . '</span>'
-            . '<select class="premiero-action-select" name="' . esc_attr($name) . '">'
+        return '<label><span class="screen-reader-text">Acción para ' . esc_html( $label ) . '</span>'
+            . '<select class="premiero-action-select" name="' . esc_attr( $name ) . '">'
             . '<option value="">Sin cambios</option>'
             . '<option value="install">Instalar</option>'
             . '<option value="activate">Instalar y activar</option>'
             . '</select></label>';
+    }
+
+    /** Fila de un plugin o tema del repositorio */
+    protected function render_item_row( $name, $detail, $origin, $status, $select_name ) {
+        $search = strtolower( remove_accents( $name . ' ' . $detail . ' ' . $origin ) );
+        echo '<tr class="premiero-repo-item" data-state="' . esc_attr( $status['state'] ) . '" data-search="' . esc_attr( $search ) . '">';
+        echo '<td><strong>' . esc_html( $name ) . '</strong><small>' . esc_html( $detail ) . '</small></td>';
+        echo '<td>' . esc_html( $origin ) . '</td>';
+        echo '<td>' . $this->render_status( $status ) . '</td>';
+        echo '<td>' . $this->render_action_select( $select_name, $name ) . '</td>';
+        echo '</tr>';
+    }
+
+    /** Fila de cabecera de un grupo dentro de la tabla */
+    protected function render_group_row( $label, $count ) {
+        echo '<tr class="premiero-repo-group"><td colspan="4">' . esc_html( $label ) . ' <span>' . (int) $count . '</span></td></tr>';
+    }
+
+    protected function open_repo_table( $id ) {
+        echo '<div class="premiero-remote-table-wrap">';
+        echo '<table class="widefat premiero-remote-table premiero-access-table premiero-repo-table" id="' . esc_attr( $id ) . '">';
+        echo '<thead><tr><th>Nombre</th><th>Origen</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
+    }
+
+    protected function close_repo_table() {
+        echo '</tbody></table></div>';
     }
 
     /* =========================
@@ -543,43 +595,24 @@ class Premiero_Admin_Toolkit_Repository {
         $tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : '';
         if ( $hook !== 'toplevel_page_premiero-admin' || $tab !== 'repository' ) return;
 
+        // El resto del aspecto viene de los estilos comunes de las pestañas (Usuarios, Menú).
         $custom_css = '
-        .premiero-two-cols { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
-        @media(min-width:1400px){ .premiero-two-cols { grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); } }
-        .premiero-box { box-sizing:border-box;background:#fff;border:1px solid #e2e4e7;border-radius:8px;padding:18px;min-width:0; }
-        .premiero-box h3 { margin-top:0; }
-        .premiero-muted { color:#6c7781; }
-        .premiero-top-note { margin:12px 0 20px; }
-        .premiero-table{width:100%;table-layout:auto}
-        .premiero-table th,.premiero-table td{vertical-align:middle;overflow-wrap:anywhere}
-        .premiero-table code{white-space:normal;overflow-wrap:anywhere}
-        .premiero-table label{display:inline-flex;align-items:flex-start;gap:6px}
-        .premiero-repo-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px}
-        .premiero-repo-toolbar .description{margin-right:auto}
-        .premiero-action-select{width:100%;min-width:150px}
-        .premiero-status{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
-        .premiero-status-active{background:#edfaef;color:#116329}
-        .premiero-status-installed{background:#eaf2fa;color:#135e96}
-        .premiero-status-available{background:#f0f0f1;color:#50575e}
-        .premiero-actions{position:sticky;bottom:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px -24px -24px;padding:12px 24px;background:rgba(255,255,255,.96);border-top:1px solid #dcdcde;box-shadow:0 -2px 8px rgba(0,0,0,.06);backdrop-filter:blur(4px)}
-        .premiero-actions .submit{margin:0;padding:0}
-        .premiero-small { font-size:12px; color:#6c7781; }
-        .premiero-result { margin-top:16px; }
-        .premiero-installing{display:none;align-items:center;gap:8px;font-weight:600;color:#135e96}
+        .premiero-repo-table td:nth-child(3){min-width:0}
+        .premiero-repo-table th:nth-child(2),.premiero-repo-table td:nth-child(2){width:190px;color:#50575e}
+        .premiero-repo-table th:nth-child(3),.premiero-repo-table td:nth-child(3){width:150px}
+        .premiero-repo-table th:last-child,.premiero-repo-table td:last-child{width:190px}
+        .premiero-repo-table .premiero-action-select{width:100%;max-width:none}
+        .premiero-repo-table tr.premiero-repo-group td{padding:9px 12px;border-top:1px solid #dcdcde;background:#f6f7f7;color:#1d2327;font-size:12px;font-weight:600}
+        .premiero-repo-table tr.premiero-repo-group td span{margin-left:4px;color:#8c8f94;font-weight:400}
+        .premiero-repo-table tr.premiero-repo-item td{border-top:1px solid #f0f0f1}
+        .premiero-repo-table tr.premiero-repo-item td:first-child{padding-left:20px}
+        .premiero-repo-table tr.is-selected td{background:var(--premiero-admin-button-secondary-bg,#f0f6fc)}
+        .premiero-notice-state.is-installed{background:var(--premiero-admin-button-secondary-bg,#f0f6fc);color:var(--premiero-admin-accent,#135e96)}
+        .premiero-repo-empty-row td{padding:18px 12px;text-align:center;color:#646970}
+        .premiero-installing{display:none;align-items:center;gap:8px;font-weight:600;color:var(--premiero-admin-accent,#2271b1)}
         .premiero-installing.is-active{display:flex}
         .premiero-installing .spinner{float:none;margin:0;visibility:visible}
-        @media(max-width:782px){
-            .premiero-box{padding:14px}
-            .premiero-repo-toolbar{align-items:stretch}
-            .premiero-repo-toolbar .description{width:100%}
-            .premiero-actions{margin:18px -16px -16px;padding:10px 16px}
-            .premiero-table,.premiero-table tbody,.premiero-table tr,.premiero-table td{display:block;width:100%;box-sizing:border-box}
-            .premiero-table thead{display:none}
-            .premiero-table tr{margin:0 0 12px;border:1px solid #dcdcde;border-radius:6px;padding:8px;background:#fff}
-            .premiero-table td{display:grid;grid-template-columns:minmax(100px,34%) minmax(0,1fr);gap:10px;align-items:center;padding:8px;border:0}
-            .premiero-table td:before{content:attr(data-label);font-weight:600;color:#50575e}
-            .premiero-table td:first-child{grid-template-columns:minmax(100px,34%) minmax(0,1fr)}
-        }
+        .premiero-repo .premiero-sticky-actions .description{margin-right:auto}
         ';
         wp_add_inline_style( 'wp-admin', $custom_css );
     }
@@ -600,151 +633,247 @@ class Premiero_Admin_Toolkit_Repository {
         $plugin_labels = $this->get_local_plugin_labels();
         $theme_labels  = $this->get_local_theme_labels();
 
-        echo '<h2>Repositorio e instalador</h2>';
         $this->render_installer_tab( $local_plugins, $local_themes, $wporg_plugins, $wporg_themes, $plugin_labels, $theme_labels );
     }
 
     protected function render_installer_tab( $local_plugins, $local_themes, $wporg_plugins, $wporg_themes, $plugin_labels, $theme_labels ) {
-        echo '<p class="premiero-top-note premiero-muted">Selecciona los plugins y temas que quieras instalar.</p>';
+        // Preparar las filas una sola vez para poder contar estados en el resumen.
+        $groups  = $this->get_wporg_plugin_groups();
+        $grouped = [];
+        foreach ( $wporg_plugins as $item ) {
+            $key = isset( $item['group'], $groups[ $item['group'] ] ) ? $item['group'] : 'other';
+            $slug = $this->wporg_slug_from_input( $item['url'] );
+            $grouped[ $key ][] = [ 'name' => $item['name'], 'slug' => $slug, 'status' => $this->get_plugin_status( $slug ) ];
+        }
+        $groups['other'] = 'Otros';
 
-        echo '<form method="post">';
-        wp_nonce_field( self::NONCE_ACTION );
+        $local_rows = [];
+        foreach ( $local_plugins as $file ) {
+            $local_rows[] = [
+                'name'   => $plugin_labels[ $file['name'] ] ?? $file['name'],
+                'file'   => $file,
+                'status' => $this->get_plugin_status( $this->get_local_plugin_slug( $file['name'] ) ),
+            ];
+        }
 
-        if ( !empty( $this->run_messages ) ) {
-            echo '<div class="premiero-result" aria-live="polite">';
+        $theme_rows = [];
+        foreach ( $local_themes as $file ) {
+            $theme_rows[] = [
+                'name'   => $theme_labels[ $file['name'] ] ?? $file['name'],
+                'detail' => $file['name'],
+                'origin' => 'Incluido' . ( $file['size'] ? ' · ' . size_format( $file['size'] ) : '' ),
+                'status' => $this->get_theme_status( $this->infer_theme_stylesheet_from_zip( $file['path'] ) ),
+                'field'  => 'local_theme_actions[' . $file['name'] . ']',
+            ];
+        }
+        foreach ( $wporg_themes as $item ) {
+            $theme_rows[] = [
+                'name'   => $item['name'],
+                'detail' => $item['slug'],
+                'origin' => 'WordPress.org',
+                'status' => $this->get_theme_status( $item['slug'] ),
+                'field'  => 'wporg_theme_actions[' . $item['slug'] . ']',
+            ];
+        }
+
+        $plugin_statuses = array_column( $local_rows, 'status' );
+        foreach ( $grouped as $rows ) {
+            $plugin_statuses = array_merge( $plugin_statuses, array_column( $rows, 'status' ) );
+        }
+        $count_installed = function( $statuses ) {
+            return count( array_filter( $statuses, function( $s ) { return 'available' !== $s['state']; } ) );
+        };
+        $plugins_total     = count( $plugin_statuses );
+        $plugins_installed = $count_installed( $plugin_statuses );
+        $themes_total      = count( $theme_rows );
+        $themes_installed  = $count_installed( array_column( $theme_rows, 'status' ) );
+        $pending           = ( $plugins_total - $plugins_installed ) + ( $themes_total - $themes_installed );
+
+        echo '<div class="premiero-access premiero-repo">';
+
+        if ( ! empty( $this->run_messages ) ) {
             foreach ( $this->run_messages as $msg ) {
                 printf(
-                    '<div class="notice notice-%1$s inline"><p>%2$s</p></div>',
+                    '<div class="notice notice-%1$s inline premiero-capture-ignore"><p>%2$s</p></div>',
                     esc_attr( $msg['type'] ),
                     wp_kses_post( $msg['text'] )
                 );
             }
-            echo '</div>';
         }
 
-        echo '<div class="premiero-repo-toolbar">';
-        echo '<span class="description">Elige una acción por elemento. Puedes preparar todos y ajustar después las excepciones.</span>';
-        echo '<button type="button" class="button" data-repo-set="install">Marcar todos para instalar</button>';
+        echo '<header class="premiero-remote-header"><div>';
+        echo '<h2>Repositorio e instalador</h2>';
+        echo '<p>Instala y activa plugins y temas de confianza, incluidos en el toolkit o desde WordPress.org.</p>';
+        echo '</div>';
+        echo '<span class="premiero-remote-status ' . ( $pending ? 'is-off' : 'is-active' ) . '"><span aria-hidden="true"></span>'
+            . esc_html( $pending ? $pending . ' sin instalar' : 'Todo instalado' ) . '</span>';
+        echo '</header>';
+
+        echo '<div class="premiero-overview premiero-notices-overview">';
+        echo '<div><strong>Plugins</strong><span>' . esc_html( $plugins_installed . ' de ' . $plugins_total . ' instalados' ) . '</span></div>';
+        echo '<div><strong>Temas</strong><span>' . esc_html( $themes_installed . ' de ' . $themes_total . ' instalados' ) . '</span></div>';
+        echo '<div class="' . ( $local_rows || $local_themes ? '' : 'is-hidden' ) . '"><strong>Incluidos en el toolkit</strong><span>' . esc_html( ( count( $local_rows ) + count( $local_themes ) ) . ' ZIP' ) . '</span></div>';
+        echo '<div class="is-hidden" data-repo-overview><strong>Seleccionados</strong><span data-repo-selected>Ninguno</span></div>';
+        echo '</div>';
+
+        echo '<form method="post" class="premiero-appearance-form" id="premiero-repo-form">';
+        wp_nonce_field( self::NONCE_ACTION );
+
+        /* ---------- Plugins ---------- */
+        echo '<section class="premiero-appearance-section">';
+        echo '<h2>Plugins</h2>';
+        echo '<p>Agrupados por uso. Los incluidos en el toolkit van primero. Lo que ya está instalado no se vuelve a descargar.</p>';
+        echo '<div class="premiero-notices-toolbar">';
+        echo '<label class="screen-reader-text" for="premiero-repo-search">Buscar plugins</label>';
+        echo '<input type="search" id="premiero-repo-search" placeholder="Buscar por nombre, slug u origen">';
+        echo '<button type="button" class="button button-primary premiero-repo-filter" data-filter="all">Todos</button>';
+        echo '<button type="button" class="button premiero-repo-filter" data-filter="available">No instalados</button>';
+        echo '<button type="button" class="button premiero-repo-filter" data-filter="installed">Instalados</button>';
+        echo '<button type="button" class="button" data-repo-set="install">Marcar no instalados</button>';
         echo '<button type="button" class="button" data-repo-set="">Limpiar selección</button>';
+        echo '<span class="premiero-menu-count" id="premiero-repo-count" aria-live="polite"></span>';
         echo '</div>';
 
-        echo '<div class="premiero-two-cols">';
-
-        // Columna A: Plugins (wp.org + locales)
-        echo '<div class="premiero-box">';
-        echo '<h3>Plugins</h3>';
-
-        // WP.org (por URL pública)
-        echo '<h4>WordPress.org</h4>';
-        if ( empty( $wporg_plugins ) ) {
-            echo '<p class="premiero-muted">No hay elementos configurados.</p>';
+        if ( empty( $local_rows ) && empty( $grouped ) ) {
+            echo '<p class="description">No hay plugins configurados.</p>';
         } else {
-            echo '<table class="widefat striped premiero-table"><thead><tr>';
-            echo '<th>Nombre</th><th>Detalle</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
-            foreach ( $wporg_plugins as $item ) {
-                $name = $item['name'];
-                $url  = $item['url'];
-                $slug = $this->wporg_slug_from_input( $url );
-                $status = $this->get_plugin_status( $slug );
-                echo '<tr>';
-                echo '<td data-label="Nombre">' . esc_html( $name ) . '</td>';
-                echo '<td data-label="Detalle" class="premiero-small"><code>' . esc_html( $slug ) . '</code></td>';
-                echo '<td data-label="Estado">' . $this->render_status( $status ) . '</td>';
-                echo '<td data-label="Acción">' . $this->render_action_select( 'wporg_actions[' . $slug . ']', $name ) . '</td>';
-                echo '</tr>';
+            $this->open_repo_table( 'premiero-repo-plugins' );
+            if ( $local_rows ) {
+                $this->render_group_row( 'Incluidos en el toolkit', count( $local_rows ) );
+                foreach ( $local_rows as $row ) {
+                    $origin = 'Incluido' . ( $row['file']['size'] ? ' · ' . size_format( $row['file']['size'] ) : '' );
+                    $this->render_item_row( $row['name'], $row['file']['name'], $origin, $row['status'], 'local_plugin_actions[' . $row['file']['name'] . ']' );
+                }
             }
-            echo '</tbody></table>';
+            foreach ( $groups as $key => $label ) {
+                if ( empty( $grouped[ $key ] ) ) continue;
+                $this->render_group_row( $label, count( $grouped[ $key ] ) );
+                foreach ( $grouped[ $key ] as $row ) {
+                    $this->render_item_row( $row['name'], $row['slug'], 'WordPress.org', $row['status'], 'wporg_actions[' . $row['slug'] . ']' );
+                }
+            }
+            echo '<tr class="premiero-repo-empty-row" hidden><td colspan="4">No hay plugins con este filtro.</td></tr>';
+            $this->close_repo_table();
         }
+        echo '</section>';
 
-        // Plugins locales
-        echo '<h4 style="margin-top:16px;">Locales (ZIP en assets/plugins)</h4>';
-        if ( empty( $local_plugins ) ) {
-            echo '<p class="premiero-muted">No se han encontrado ZIPs de plugins en la carpeta indicada.</p>';
+        /* ---------- Temas ---------- */
+        echo '<section class="premiero-appearance-section">';
+        echo '<h2>Temas</h2>';
+        echo '<p>Instalar un tema no lo activa salvo que elijas «Instalar y activar».</p>';
+        if ( empty( $theme_rows ) ) {
+            echo '<p class="description">No hay temas configurados.</p>';
         } else {
-            echo '<table class="widefat striped premiero-table"><thead><tr>';
-            echo '<th>Nombre</th><th>Archivo</th><th>Tamaño</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
-            foreach ( $local_plugins as $file ) {
-                $display = $plugin_labels[$file['name']] ?? $file['name'];
-                $status  = $this->get_plugin_status( $this->get_local_plugin_slug( $file['name'] ) );
-                echo '<tr>';
-                echo '<td data-label="Nombre">' . esc_html( $display ) . '</td>';
-                echo '<td data-label="Archivo"><code>' . esc_html( $file['name'] ) . '</code></td>';
-                echo '<td data-label="Tamaño">' . esc_html( $file['size'] ? size_format( $file['size'] ) : '—' ) . '</td>';
-                echo '<td data-label="Estado">' . $this->render_status( $status ) . '</td>';
-                echo '<td data-label="Acción">' . $this->render_action_select( 'local_plugin_actions[' . $file['name'] . ']', $display ) . '</td>';
-                echo '</tr>';
+            $this->open_repo_table( 'premiero-repo-themes' );
+            foreach ( $theme_rows as $row ) {
+                $this->render_item_row( $row['name'], $row['detail'], $row['origin'], $row['status'], $row['field'] );
             }
-            echo '</tbody></table>';
+            $this->close_repo_table();
         }
-        echo '</div>';
+        echo '</section>';
 
-        // Columna B: Temas (wp.org + locales)
-        echo '<div class="premiero-box">';
-        echo '<h3>Temas</h3>';
-
-        echo '<h4>WordPress.org</h4>';
-        if ( empty( $wporg_themes ) ) {
-            echo '<p class="premiero-muted">No hay elementos configurados.</p>';
-        } else {
-            echo '<table class="widefat striped premiero-table"><thead><tr>';
-            echo '<th>Nombre</th><th>Detalle</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
-            foreach ( $wporg_themes as $item ) {
-                $name = $item['name'];
-                $slug = $item['slug'];
-                $status = $this->get_theme_status( $slug );
-                echo '<tr>';
-                echo '<td data-label="Nombre">' . esc_html( $name ) . '</td>';
-                echo '<td data-label="Detalle" class="premiero-small"><code>' . esc_html( $slug ) . '</code></td>';
-                echo '<td data-label="Estado">' . $this->render_status( $status ) . '</td>';
-                echo '<td data-label="Acción">' . $this->render_action_select( 'wporg_theme_actions[' . $slug . ']', $name ) . '</td>';
-                echo '</tr>';
-            }
-            echo '</tbody></table>';
-        }
-
-        echo '<h4 style="margin-top:16px;">Locales (ZIP en assets/themes)</h4>';
-        if ( empty( $local_themes ) ) {
-            echo '<p class="premiero-muted">No se han encontrado ZIPs de temas en la carpeta indicada.</p>';
-        } else {
-            echo '<table class="widefat striped premiero-table"><thead><tr>';
-            echo '<th>Nombre</th><th>Archivo</th><th>Tamaño</th><th>Estado</th><th>Acción</th></tr></thead><tbody>';
-            foreach ( $local_themes as $file ) {
-                $display = $theme_labels[$file['name']] ?? $file['name'];
-                $theme_slug = $this->infer_theme_stylesheet_from_zip( $file['path'] );
-                $status = $this->get_theme_status( $theme_slug );
-                echo '<tr>';
-                echo '<td data-label="Nombre">' . esc_html( $display ) . '</td>';
-                echo '<td data-label="Archivo"><code>' . esc_html( $file['name'] ) . '</code></td>';
-                echo '<td data-label="Tamaño">' . esc_html( $file['size'] ? size_format( $file['size'] ) : '—' ) . '</td>';
-                echo '<td data-label="Estado">' . $this->render_status( $status ) . '</td>';
-                echo '<td data-label="Acción">' . $this->render_action_select( 'local_theme_actions[' . $file['name'] . ']', $display ) . '</td>';
-                echo '</tr>';
-            }
-            echo '</tbody></table>';
-        }
-        echo '</div>'; // temas
-
-        echo '</div>'; // two-cols
-
-        echo '<div class="premiero-actions">';
+        echo '<div class="premiero-sticky-actions">';
+        echo '<span class="description" data-repo-summary aria-live="polite">Elige una acción en los plugins o temas que quieras instalar.</span>';
         echo '<div class="premiero-installing" aria-live="polite"><span class="spinner"></span>Procesando instalaciones… No cierres esta página.</div>';
-        submit_button( 'Instalar seleccionados', 'primary', 'premiero_run_install' );
+        submit_button( 'Instalar seleccionados', 'primary', 'premiero_run_install', false );
         echo '</div>';
 
         echo '</form>';
+        echo '</div>';
         echo '<script>
         (function(){
-            var form = document.currentScript.previousElementSibling;
-            if ( ! form || form.tagName !== "FORM" ) return;
-            var selects = form.querySelectorAll(".premiero-action-select");
-            form.querySelectorAll("[data-repo-set]").forEach(function(button){
+            var form = document.getElementById("premiero-repo-form");
+            if ( ! form ) return;
+            var selects  = Array.prototype.slice.call(form.querySelectorAll(".premiero-action-select"));
+            var table    = document.getElementById("premiero-repo-plugins");
+            var rows     = table ? Array.prototype.slice.call(table.querySelectorAll("tr.premiero-repo-item")) : [];
+            var search   = document.getElementById("premiero-repo-search");
+            var count    = document.getElementById("premiero-repo-count");
+            var filters  = Array.prototype.slice.call(form.querySelectorAll(".premiero-repo-filter"));
+            var summary  = form.querySelector("[data-repo-summary]");
+            var overview = document.querySelector("[data-repo-overview]");
+            var selected = document.querySelector("[data-repo-selected]");
+            var current  = "all";
+
+            function norm(s){ return ( s || "" ).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+
+            function refreshSelection(){
+                var n = 0;
+                selects.forEach(function(select){
+                    var row = select.closest("tr");
+                    if ( row ) row.classList.toggle("is-selected", select.value !== "");
+                    if ( select.value !== "" ) n++;
+                });
+                var text = n === 1 ? "1 elemento" : n + " elementos";
+                if ( summary ) summary.textContent = n ? text + " para instalar o activar." : "Elige una acción en los plugins o temas que quieras instalar.";
+                if ( selected ) selected.textContent = n ? text : "Ninguno";
+                if ( overview ) overview.classList.toggle("is-hidden", ! n);
+                if ( overview ) overview.classList.toggle("is-attention", !! n);
+                refreshCount();
+            }
+
+            function refreshCount(){
+                if ( ! count ) return;
+                var visible = rows.filter(function(row){ return ! row.hidden; });
+                var marked  = visible.filter(function(row){ return row.querySelector(".premiero-action-select").value !== ""; }).length;
+                count.textContent = visible.length + " visibles · " + marked + " seleccionados";
+            }
+
+            function applyFilters(){
+                if ( ! table ) return;
+                var term = norm( search ? search.value.trim() : "" );
+                rows.forEach(function(row){
+                    var state  = row.dataset.state;
+                    var okState = current === "all" || ( current === "available" ? state === "available" : state !== "available" );
+                    row.hidden = ! ( okState && ( ! term || row.dataset.search.indexOf(term) !== -1 ) );
+                });
+                // Ocultar las cabeceras de grupo que se quedan sin filas visibles.
+                var any = false;
+                table.querySelectorAll("tr.premiero-repo-group").forEach(function(group){
+                    var next = group.nextElementSibling, visible = false;
+                    while ( next && next.classList.contains("premiero-repo-item") ) {
+                        if ( ! next.hidden ) visible = true;
+                        next = next.nextElementSibling;
+                    }
+                    group.hidden = ! visible;
+                    if ( visible ) any = true;
+                });
+                var empty = table.querySelector(".premiero-repo-empty-row");
+                if ( empty ) empty.hidden = any;
+                refreshCount();
+            }
+
+            if ( search ) {
+                search.addEventListener("input", applyFilters);
+                search.addEventListener("keydown", function(e){ if ( e.key === "Enter" ) e.preventDefault(); });
+            }
+            filters.forEach(function(button){
                 button.addEventListener("click", function(){
-                    selects.forEach(function(select){ select.value = button.dataset.repoSet; });
+                    current = button.dataset.filter;
+                    filters.forEach(function(b){ b.classList.toggle("button-primary", b === button); });
+                    applyFilters();
                 });
             });
+
+            // "Marcar no instalados" afecta a los plugins visibles; "Limpiar selección" vacía todo.
+            form.querySelectorAll("[data-repo-set]").forEach(function(button){
+                button.addEventListener("click", function(){
+                    var value = button.dataset.repoSet;
+                    if ( value === "" ) {
+                        selects.forEach(function(select){ select.value = ""; });
+                    } else {
+                        rows.forEach(function(row){
+                            if ( ! row.hidden && row.dataset.state === "available" ) row.querySelector(".premiero-action-select").value = value;
+                        });
+                    }
+                    refreshSelection();
+                });
+            });
+
+            selects.forEach(function(select){ select.addEventListener("change", refreshSelection); });
+
             form.addEventListener("submit", function(event){
-                var selected = Array.prototype.some.call(selects, function(select){ return select.value !== ""; });
-                if ( ! selected ) {
+                if ( ! selects.some(function(select){ return select.value !== ""; }) ) {
                     event.preventDefault();
                     window.alert("Selecciona al menos una acción antes de continuar.");
                     return;
@@ -762,6 +891,9 @@ class Premiero_Admin_Toolkit_Repository {
                 var progress = form.querySelector(".premiero-installing");
                 if ( progress ) progress.classList.add("is-active");
             });
+
+            applyFilters();
+            refreshSelection();
         })();
         </script>';
     }
